@@ -1,0 +1,61 @@
+{
+    "name": "jmiy/business-hyperf-3-2",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.0",
+        "hyperf/async-queue": "^3.2",
+        "hyperf/constants": "^3.2",
+        "hyperf/signal": "^3.2",
+        "hyperf/snowflake": "^3.2",
+        "hyperf/tracer": "^3.2",
+        "hyperf/translation": "^3.2",
+        "hyperf/validation": "^3.2",
+        "jmiy/hyperf-ding-notice-3-1": "dev-main",
+        "hyperf/grpc": "^3.2",
+        "hyperf/grpc-client": "^3.2",
+        "hyperf/grpc-server": "^3.2",
+        "hyperf/rpc": "^3.2",
+        "hyperf/rpc-client": "^3.2",
+        "hyperf/rpc-multiplex": "^3.2",
+        "hyperf/rpc-server": "^3.2",
+        "hyperf/json-rpc": "^3.2",
+        "hyperf/load-balancer": "^3.2",
+        "jmiy/dtm-client": "^1.0@dev"
+    },
+    "autoload":{
+        "psr-4":{
+            "Business\\Hyperf\\":"src/"
+        },
+        "files": [
+            "src/Functions.php",
+            "src/Utils/Collection/Functions.php"
+        ]
+    },
+    "description": "",
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HyperfTest\\": "tests"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit -c phpunit.xml --colors=always",
+        "analyse": "phpstan analyse --memory-limit 1024M -l 1 ./src",
+        "cs-fix": "php-cs-fixer fix $1"
+    },
+    "extra": {
+        "hyperf": {
+            "config": "Business\\Hyperf\\ConfigProvider"
+        }
+    }
+}
