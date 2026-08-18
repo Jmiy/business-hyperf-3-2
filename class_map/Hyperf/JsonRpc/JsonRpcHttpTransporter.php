@@ -16,6 +16,7 @@ use Business\Hyperf\Constants\Constant;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 use Hyperf\Collection\Arr;
+use Hyperf\Context\Context;
 use Hyperf\Guzzle\ClientFactory;
 use Hyperf\LoadBalancer\LoadBalancerInterface;
 use Hyperf\LoadBalancer\Node;
@@ -25,8 +26,6 @@ use RuntimeException;
 use function Business\Hyperf\Utils\Collection\data_get;
 use function Hyperf\Config\config;
 use function Hyperf\Support\value;
-
-use Hyperf\Context\Context;
 
 class JsonRpcHttpTransporter implements TransporterInterface
 {
@@ -48,10 +47,10 @@ class JsonRpcHttpTransporter implements TransporterInterface
 
     public function __construct(private ClientFactory $clientFactory, array $config = [])
     {
-        if (!isset($config['recv_timeout'])) {
+        if (! isset($config['recv_timeout'])) {
             $config['recv_timeout'] = $this->recvTimeout;
         }
-        if (!isset($config['connect_timeout'])) {
+        if (! isset($config['connect_timeout'])) {
             $config['connect_timeout'] = $this->connectTimeout;
         }
         $this->clientOptions = $config;
@@ -66,7 +65,7 @@ class JsonRpcHttpTransporter implements TransporterInterface
             if ($node->schema !== null) {
                 $schema = $node->schema;
             }
-            if (!in_array($schema, ['http', 'https'])) {
+            if (! in_array($schema, ['http', 'https'])) {
                 $schema = 'http';
             }
             $schema .= '://';
@@ -74,18 +73,18 @@ class JsonRpcHttpTransporter implements TransporterInterface
         });
         $url = $schema . $uri;
 
-        /****************AOP handle request options start *****************************/
+        /* AOP handle request options start */
         $contextHeaders = Context::get(Constant::JSON_RPC_HEADERS_KEY, []);
 
         $headers = Arr::collapse([
             $contextHeaders,
             [
                 'Content-Type' => 'application/json',
-//                Constant::RPC_APP_KEY => config('app_name'),
-            ]
+                //                Constant::RPC_APP_KEY => config('app_name'),
+            ],
         ]);
 
-        if (!array_key_exists(Constant::RPC_PROTOCOL_KEY, $headers)) {
+        if (! array_key_exists(Constant::RPC_PROTOCOL_KEY, $headers)) {
             $headers[Constant::RPC_PROTOCOL_KEY] = Constant::JSON_RPC_HTTP_PROTOCOL;
         }
 
@@ -95,23 +94,23 @@ class JsonRpcHttpTransporter implements TransporterInterface
             RequestOptions::BODY => $data,
         ];
         if (array_key_exists('requestOptions', $contextHeaders)) {
-            $requestOptions = data_get($contextHeaders, ['requestOptions']);//RequestOptions::PROXY
+            $requestOptions = data_get($contextHeaders, ['requestOptions']); // RequestOptions::PROXY
             if ($requestOptions) {
                 $options = Arr::collapse([
                     $options,
-                    $requestOptions
+                    $requestOptions,
                 ]);
             }
             unset($headers['requestOptions']);
             $options[RequestOptions::HEADERS] = $headers;
         }
-        /****************AOP handle request options end   *****************************/
+        /* AOP handle request options end */
 
         $response = $this->getClient()->post($url, $options);
         if ($response->getStatusCode() === 200) {
-            return (string)$response->getBody();
+            return (string) $response->getBody();
         }
-//        $this->loadBalancer->removeNode($node);//3.0 bug
+        //        $this->loadBalancer->removeNode($node);//3.0 bug
 
         return '';
     }
@@ -142,7 +141,7 @@ class JsonRpcHttpTransporter implements TransporterInterface
     }
 
     /**
-     * @param \Hyperf\LoadBalancer\Node[] $nodes
+     * @param Node[] $nodes
      */
     public function setNodes(array $nodes): self
     {

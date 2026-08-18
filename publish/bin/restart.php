@@ -1,7 +1,17 @@
 <?php
 
-use Symfony\Component\Console\Output\ConsoleOutput;
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 use Swoole\Process;
+use Symfony\Component\Console\Output\ConsoleOutput;
+
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoload)) {
     include $autoload;
@@ -11,8 +21,8 @@ if (file_exists($autoload)) {
     }
 }
 
-if (!isset($logger)) {
-    $logger = new class() {
+if (! isset($logger)) {
+    $logger = new class {
         public function write(string $msg)
         {
             file_put_contents('php://stderr', $msg);
@@ -25,12 +35,12 @@ if (!isset($logger)) {
     };
 }
 
-if (!extension_loaded('swoole') && !dl('swoole.so')) {
+if (! extension_loaded('swoole') && ! dl('swoole.so')) {
     $logger->writeln("swoole extension isn't loaded");
     exit(255);
 }
 
-$usage = function() use ($logger) {
+$usage = function () use ($logger) {
     global $argv;
     $msg = <<<USAGE
 Usage: {$argv[0]} OPTIONS
@@ -58,58 +68,58 @@ USAGE;
  * @return bool
  * @todo 支持 Unix 系统，Windows 等 swoole 支持了再说
  */
-$isZombieProcess = function(int $pid):bool {
+$isZombieProcess = function (int $pid): bool {
     if (false !== ($stat = @file_get_contents("/proc/{$pid}/stat"))) {
-        list(,, $status) = explode(' ', $stat, 4);
+        [, , $status] = explode(' ', $stat, 4);
         // 进程状态为 Z，进程已成为僵尸进程
-        return 'Z' === $status;
+        return $status === 'Z';
     }
 
     return false;
 };
 
 $options = getopt('c:f:p:a:t:m:P:s:');
-if (!isset($options['p'], $options['a'], $options['c'], $options['f'])) {
+if (! isset($options['p'], $options['a'], $options['c'], $options['f'])) {
     $usage();
 }
 
 $token = trim($options['a']);
-if (1 !== preg_match('/^[0-9a-f]{64}$/', $token)) {
+if (preg_match('/^[0-9a-f]{64}$/', $token) !== 1) {
     $logger->writeln('Invalid dingtalk access token');
     exit(1);
 }
 
 $secret = trim($options['s'] ?? '');
-if ($secret !== '' && 1 !== preg_match('/^SEC[0-9a-f]{64}$/', $secret)) {
+if ($secret !== '' && preg_match('/^SEC[0-9a-f]{64}$/', $secret) !== 1) {
     $logger->writeln('Invalid dingtalk api secret');
     exit(1);
 }
 
-$pid = (int)$options['p'];
+$pid = (int) $options['p'];
 if ($pid <= 0) {
     $logger->writeln("Invalid master pid: {$pid}");
     exit(1);
 }
 
 $pidFile = trim($options['f']);
-if (!is_readable($pidFile)) {
+if (! is_readable($pidFile)) {
     $path = $pidFile;
-    while (!is_readable($path)) {
+    while (! is_readable($path)) {
         $path = dirname($path);
-        if ('.' === $path || '/' === $path) {
+        if ($path === '.' || $path === '/') {
             $path = '';
             break;
         }
     }
 
-    if ('' === $path) {
+    if ($path === '') {
         $logger->writeln("{$pidFile}: No such file or directory");
         exit(1);
     }
 }
 
 $command = trim($options['c']);
-if (!is_readable($command)) {
+if (! is_readable($command)) {
     if (file_exists($command)) {
         $logger->writeln("permission denied: {$command}");
     } else {
@@ -138,7 +148,7 @@ if ($isZombieProcess($pid)) {
 }
 
 while ($timeout--) {
-    if (!$isZombie && Process::kill($pid, 0)) {
+    if (! $isZombie && Process::kill($pid, 0)) {
         Process::kill($pid, \SIGTERM);
         $logger->write($first ? 'Stop service.' : '.');
         $first = false;
@@ -151,7 +161,7 @@ while ($timeout--) {
         }
     } else {
         $logger->writeln('Start service...');
-        (new Process(function(Process $proc) use ($command) {
+        (new Process(function (Process $proc) use ($command) {
             $proc->exec('/bin/sh', ['-c', PHP_BINARY . " {$command} start > /dev/stdout &"]);
         }))->start();
 
@@ -186,7 +196,7 @@ if (null !== ($json = @json_decode($message, true)) && isset($json['msgtype'])) 
     ]);
 }
 
-$uri = "/robot/send?access_token=$token";
+$uri = "/robot/send?access_token={$token}";
 if ($secret) {
     $timestamp = time() * 1000;
     $sign = urlencode(base64_encode(hash_hmac('sha256', "{$timestamp}\n{$secret}", $secret, true)));
@@ -196,7 +206,7 @@ if ($secret) {
 $host = 'oapi.dingtalk.com';
 $len = strlen($data);
 $fp = fsockopen("ssl://{$host}", 443, $errno, $errstr, 30);
-if (false === $fp) {
+if ($fp === false) {
     $logger->writeln("Send warning message failed: {$errstr}");
     exit(2);
 }
@@ -207,28 +217,28 @@ $result = fwrite(
 );
 
 $code = 0;
-if (false !== $result) {
+if ($result !== false) {
     $resp = '';
-    while (!feof($fp)) {
+    while (! feof($fp)) {
         // 这里没错，只取最后一行
         $resp = fgets($fp);
     }
 
     if ($resp) {
         if (null === ($json = @json_decode($resp, true))
-            || !isset($json['errcode'], $json['errmsg'])
-            || 0 !== $json['errcode'] || 'ok' !== $json['errmsg']
+            || ! isset($json['errcode'], $json['errmsg'])
+            || $json['errcode'] !== 0 || $json['errmsg'] !== 'ok'
         ) {
             $code = 2;
             $logger->writeln("Send warning message failed: {$resp}");
         }
     } else {
         $code = 2;
-        $logger->writeln("Send warning message failed: empty reply");
+        $logger->writeln('Send warning message failed: empty reply');
     }
 } else {
     $code = 2;
-    $logger->writeln("Send warning message failed: request failed");
+    $logger->writeln('Send warning message failed: request failed');
 }
 
 fclose($fp);

@@ -1,12 +1,19 @@
 <?php
 
 declare(strict_types=1);
-
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 use function Hyperf\Support\env;
 
 return [
     // 重启服务时等待服务退出的超时时间，超时未退出视为重启失败。单位 秒，可选值 3-60
-    'timeout' => (int)env('RESTART_CONSOLE_TIMEOUT', 60),
+    'timeout' => (int) env('RESTART_CONSOLE_TIMEOUT', 60),
     // 重启脚本路径
     'script_path' => env('RESTART_CONSOLE_SCRIPT') ?: (BASE_PATH . '/bin/restart.php'),
     // 钉钉警报机器人 webhook access token
@@ -15,7 +22,7 @@ return [
     'dingtalk_secret' => env('RESTART_CONSOLE_DD_SECRET', ''),
     /**
      * 钉钉警报机器人消息，不配置默认发送 text 消息，消息内容为
-     * 重启微服务({APP_NAME})[{HOST_NAME}:{IP_ADDR}]失败，项目路径({APP_PATH})
+     * 重启微服务({APP_NAME})[{HOST_NAME}:{IP_ADDR}]失败，项目路径({APP_PATH}).
      *
      * 需要发送其他类型消息的，配置成完整的 json 消息体即可，具体见
      * https://developers.dingtalk.com/document/app/custom-robot-access/title-72m-8ag-pqw#title-72m-8ag-pqw

@@ -23,9 +23,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Apply the scope to a given Model query builder.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
-     * @param \Hyperf\Database\Model\Model $model
      */
     public function apply(Builder $builder, Model $model)
     {
@@ -34,8 +31,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Extend the query builder with the needed functions.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
      */
     public function extend(Builder $builder)
     {
@@ -48,7 +43,7 @@ class SoftDeletingScope implements Scope
 
             $model = $builder->getModel();
             $data = [
-                $column => Db::raw($model->getKeyName()),//设置为无效
+                $column => Db::raw($model->getKeyName()), // 设置为无效
             ];
             if ($model->getDeletedTimeColumn()) {
                 $data[$model->getDeletedTimeColumn()] = $model->getDateTime($model->freshTimestamp(), $model::DELETED_AT_DATE_FORMAT);
@@ -61,12 +56,11 @@ class SoftDeletingScope implements Scope
     /**
      * Get the "deleted at" column for the builder.
      *
-     * @param \Hyperf\Database\Model\Builder $builder
      * @return string
      */
     protected function getDeletedAtColumn(Builder $builder)
     {
-        if (count((array)$builder->getQuery()->joins) > 0) {
+        if (count((array) $builder->getQuery()->joins) > 0) {
             return $builder->getModel()->getQualifiedDeletedAtColumn($builder);
         }
 
@@ -75,8 +69,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Add the restore extension to the builder.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
      */
     protected function addRestore(Builder $builder)
     {
@@ -97,13 +89,11 @@ class SoftDeletingScope implements Scope
 
     /**
      * Add the with-trashed extension to the builder.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
      */
     protected function addWithTrashed(Builder $builder)
     {
         $builder->macro('withTrashed', function (Builder $builder, $withTrashed = true) {
-            if (!$withTrashed) {
+            if (! $withTrashed) {
                 return $builder->withoutTrashed();
             }
 
@@ -113,8 +103,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Add the without-trashed extension to the builder.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
      */
     protected function addWithoutTrashed(Builder $builder)
     {
@@ -122,7 +110,9 @@ class SoftDeletingScope implements Scope
             $model = $builder->getModel();
 
             $builder->withoutGlobalScope($this)->where(
-                $model->getQualifiedDeletedAtColumn($builder), '=', $model::EFFECTIVE
+                $model->getQualifiedDeletedAtColumn($builder),
+                '=',
+                $model::EFFECTIVE
             );
 
             return $builder;
@@ -131,8 +121,6 @@ class SoftDeletingScope implements Scope
 
     /**
      * Add the only-trashed extension to the builder.
-     *
-     * @param \Hyperf\Database\Model\Builder $builder
      */
     protected function addOnlyTrashed(Builder $builder)
     {
@@ -140,7 +128,9 @@ class SoftDeletingScope implements Scope
             $model = $builder->getModel();
 
             $builder->withoutGlobalScope($this)->where(
-                $model->getQualifiedDeletedAtColumn($builder), '!=', $model::EFFECTIVE
+                $model->getQualifiedDeletedAtColumn($builder),
+                '!=',
+                $model::EFFECTIVE
             );
 
             return $builder;

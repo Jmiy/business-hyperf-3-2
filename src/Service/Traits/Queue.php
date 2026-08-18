@@ -1,33 +1,37 @@
 <?php
 
+declare(strict_types=1);
 /**
- * base trait
- * User: Jmiy
- * Date: 2019-05-16
- * Time: 16:50
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
 namespace Business\Hyperf\Service\Traits;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Config\config;
+use Business\Hyperf\Constants\Constant;
 use Hyperf\Collection\Arr;
 use Hyperf\Coroutine\Coroutine;
-use Business\Hyperf\Constants\Constant;
+use Throwable;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Config\config;
 
 trait Queue
 {
     /**
-     * 生产消息
+     * 生产消息.
      * @param callable $callback 回调闭包|回调类
-     * @param string|null $method 类方法
-     * @param array|null $parameters 方法参数
-     * @param int|null $delay 延迟时间 默认：0
-     * @param string|null $queueConnection 消息队列
-     * @param array|int[]|null $extData 扩展参数 有用控制重试次数 睡眠时间等
-     * @param array|null $request 请求
-     * @return bool
-     * @throws \Throwable
+     * @param null|string $method 类方法
+     * @param null|array $parameters 方法参数
+     * @param null|int $delay 延迟时间 默认：0
+     * @param null|string $queueConnection 消息队列
+     * @param null|array|int[] $extData 扩展参数 有用控制重试次数 睡眠时间等
+     * @param null|array $request 请求
+     * @throws Throwable
      */
     public static function push(
         $callback,
@@ -41,30 +45,29 @@ trait Queue
             Constant::SLEEP_MAX => 10,
         ],
         ?array $request = null
-    ): bool
-    {
+    ): bool {
         $extData = Arr::collapse([
             [
                 Constant::QUEUE_CONNECTION => $queueConnection,
                 Constant::QUEUE_DELAY => $delay === null ? rand(1, 10) : $delay,
             ],
-            $extData
+            $extData,
         ]);
 
         $job = getJobData($callback, $method, $parameters, $request, $extData);
 
-//        return pushQueue($job);
+        //        return pushQueue($job);
 
         $isPush = true;
         $retryMax = data_get($extData, Constant::RETRY_MAX, 3);
         $sleepMin = data_get($extData, Constant::SLEEP_MIN, 0);
         $sleepMax = data_get($extData, Constant::SLEEP_MAX, 1);
-        for ($i = 0; $i < $retryMax; $i++) {
+        for ($i = 0; $i < $retryMax; ++$i) {
             $isPush = pushQueue($job);
             if ($isPush) {
                 break;
             }
-            //如果压入队列失败，就睡眠 $sleepMin-$sleepMax，等待redis恢复
+            // 如果压入队列失败，就睡眠 $sleepMin-$sleepMax，等待redis恢复
             Coroutine::sleep(rand($sleepMin, $sleepMax));
         }
 
@@ -72,7 +75,8 @@ trait Queue
     }
 
     /**
-     * 获取队列基本数据
+     * 获取队列基本数据.
+     * @param mixed $queue
      * @return string
      */
     public static function getQueueData($queue = Constant::QUEUE_EBAY)
@@ -84,5 +88,4 @@ trait Queue
             Constant::POOL_NAME => $poolName,
         ];
     }
-
 }

@@ -12,14 +12,14 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Utils\Redis\Lua;
 
-use function Hyperf\Support\make;
-use Hyperf\Context\ApplicationContext;
-use Business\Hyperf\Utils\Redis\Lua\Contracts\LuaInterface;
-use Business\Hyperf\Utils\Redis\Lua\Exception\OperatorNotFoundException;
-use Business\Hyperf\Utils\Redis\Lua\Contracts\OperatorInterface;
 use Business\Hyperf\Utils\Redis\Lua\Contracts\BatchFuzzyDelete;
-
+use Business\Hyperf\Utils\Redis\Lua\Contracts\LuaInterface;
+use Business\Hyperf\Utils\Redis\Lua\Contracts\OperatorInterface;
+use Business\Hyperf\Utils\Redis\Lua\Exception\OperatorNotFoundException;
+use Hyperf\Context\ApplicationContext;
 use Hyperf\Redis\RedisFactory;
+
+use function Hyperf\Support\make;
 
 class LuaManager implements LuaInterface
 {
@@ -39,7 +39,7 @@ class LuaManager implements LuaInterface
 
     public function handle(string $key, array $keys, ?string $poolName = 'default', ?int $num = null)
     {
-        $sha = $this->getLuaSha($key,$poolName);
+        $sha = $this->getLuaSha($key, $poolName);
 
         $operator = $this->getOperator($key);
 

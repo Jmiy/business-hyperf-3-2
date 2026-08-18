@@ -12,10 +12,9 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Kernel\HttpMessage\Server\Request;
 
-use Hyperf\HttpMessage\Exception\BadRequestHttpException;
-use Hyperf\HttpServer\Contract\RequestInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Business\Hyperf\Kernel\HttpMessage\Exception\InvalidArgumentException;
+use Hyperf\HttpMessage\Exception\BadRequestHttpException;
+use Psr\Http\Message\ServerRequestInterface;
 
 use function Hyperf\Support\call;
 
@@ -29,24 +28,19 @@ class Parser
     ];
 
     /**
-     * 解析请求参数
+     * 解析请求参数.
      * @param string $rawBody 请求参数
      * @param string $contentType 请求参数的类型
-     * @param bool|null $associative
-     * @param int $depth
-     * @param int $flags
-     * @return mixed
      */
     public static function parse(
         string $rawBody,
         string $contentType,
-        ?bool  $associative = null,
-        int    $depth = 512,
-        int    $flags = 0
-    ): mixed
-    {
+        ?bool $associative = null,
+        int $depth = 512,
+        int $flags = 0
+    ): mixed {
         $contentType = strtolower($contentType);
-        if (!array_key_exists($contentType, static::$parsers)) {
+        if (! array_key_exists($contentType, static::$parsers)) {
             throw new InvalidArgumentException("The '{$contentType}' request parser is not defined.");
         }
 
@@ -61,14 +55,13 @@ class Parser
     }
 
     public static function normalizeParsedBody(
-        array                   $data = [],
+        array $data = [],
         ?ServerRequestInterface $request = null,
-        ?bool                   $associative = null,
-        int                     $depth = 512,
-        int                     $flags = 0
-    ): mixed
-    {
-        if (!$request) {
+        ?bool $associative = null,
+        int $depth = 512,
+        int $flags = 0
+    ): mixed {
+        if (! $request) {
             return $data;
         }
 
@@ -81,7 +74,7 @@ class Parser
         }
 
         try {
-            if (static::has($contentType) && $rawBody = (string)$request->getBody()) {
+            if (static::has($contentType) && $rawBody = (string) $request->getBody()) {
                 $data = static::parse($rawBody, $contentType, $associative, $depth, $flags);
             }
         } catch (InvalidArgumentException $exception) {
@@ -92,6 +85,4 @@ class Parser
 
         return $data;
     }
-
-
 }

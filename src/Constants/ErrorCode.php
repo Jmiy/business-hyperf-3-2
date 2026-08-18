@@ -52,6 +52,7 @@ class ErrorCode extends AbstractConstants
      * @Message("Task does not exist！")
      */
     public const ERROR_WISH_INSERT = 1001;
+
     /**
      * @Message("Task does not exist！")
      */
@@ -61,6 +62,7 @@ class ErrorCode extends AbstractConstants
      * @Message("Task does not exist！")
      */
     public const ERROR_WISH_REQUEST = 1003;
+
     /**
      * @Message("Task does not exist！")
      */
@@ -90,10 +92,12 @@ class ErrorCode extends AbstractConstants
      * @Message("Daraz error！")
      */
     public const ERROR_DARAZ = 30021001;
+
     /**
      * @Message("Zoodmall error！")
      */
     public const ERROR_ZOODMALL = 60021001;
+
     /**
      * @Message("Catch error！")
      */

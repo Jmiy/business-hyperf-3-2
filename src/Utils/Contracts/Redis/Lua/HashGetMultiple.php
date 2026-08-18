@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Business\Hyperf\Utils\Contracts\Redis\Lua;
 
 class HashGetMultiple implements OperatorInterface
@@ -16,8 +17,8 @@ class HashGetMultiple implements OperatorInterface
     public function getScript(): string
     {
         return <<<'LUA'
-    local values = {}; 
-    for i,v in ipairs(KEYS) do 
+    local values = {};
+    for i,v in ipairs(KEYS) do
         if(redis.call('type',v).ok == 'hash') then
             values[#values+1] = redis.call('hgetall',v);
         end

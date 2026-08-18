@@ -1,11 +1,20 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace Business\Hyperf\Model\Log;
 
 use App\Constants\Constant;
 use Business\Hyperf\Model\BaseModel;
+use Carbon\Carbon;
 
 /**
  * @property int $id 主键id
@@ -15,8 +24,8 @@ use Business\Hyperf\Model\BaseModel;
  * @property int $line line
  * @property string $business_data business_data
  * @property string $stack_trace stack_trace
- * @property \Carbon\Carbon $create_time create_time
- * @property \Carbon\Carbon $update_time update_time
+ * @property Carbon $create_time create_time
+ * @property Carbon $update_time update_time
  */
 class Log extends BaseModel
 {
@@ -34,8 +43,9 @@ class Log extends BaseModel
      */
     public const UPDATED_AT = 'update_time';
 
-    public const TABLE_PREFIX = 'log';//表前缀
-    public const CONNECTION_PREFIX = Constant::DB_CONNECTION_PREFIX;//'pt_listing';//数据库连接前缀
+    public const TABLE_PREFIX = 'log'; // 表前缀
+
+    public const CONNECTION_PREFIX = Constant::DB_CONNECTION_PREFIX; // 数据库连接前缀
 
     /**
      * The table associated with the model.

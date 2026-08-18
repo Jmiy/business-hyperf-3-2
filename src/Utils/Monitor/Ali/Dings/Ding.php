@@ -1,10 +1,19 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Monitor\Ali\Dings;
 
-use Hyperf\Collection\Arr;
-use Business\Hyperf\Utils\Support\Facades\Queue;
 use Business\Hyperf\Job\DingDingJob;
+use Business\Hyperf\Utils\Support\Facades\Queue;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\HttpServer\Contract\RequestInterface;
 
@@ -17,7 +26,7 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 class Ding
 {
     /**
-     * 推送预警
+     * 推送预警.
      * @param mixed $exceptionName 错误的标题
      * @param mixed $message 错误的信息
      * @param mixed $code 错误的code
@@ -25,10 +34,10 @@ class Ding
      * @param mixed $line 错误的位置
      * @param mixed $trace 错误的跟踪
      * @param mixed $robot 机器人配置
-     * @param bool|null $simple 是否简述 true:是  false:否  默认：false
-     * @param bool|null $isQueue 是否压入消息队列发送 true:是  false:否  默认：true
-     * @param int|null $delay 延迟消费时长  默认：null(0-10秒随机)
-     * @return bool|null
+     * @param null|bool $simple 是否简述 true:是  false:否  默认：false
+     * @param null|bool $isQueue 是否压入消息队列发送 true:是  false:否  默认：true
+     * @param null|int $delay 延迟消费时长  默认：null(0-10秒随机)
+     * @return null|bool
      */
     public static function report(
         mixed $exceptionName,
@@ -40,17 +49,16 @@ class Ding
         mixed $robot = 'default',
         ?bool $simple = false,
         ?bool $isQueue = true,
-        ?int  $delay = null
-    )
-    {
-//        $request = ApplicationContext::getContainer()->get(RequestInterface::class);
-//        try {
-//            $requestData = $request->all();
-//            $url = $request->fullUrl() . '|' . $request->getHeaderLine('HTTP_REFERER');
-//        } catch (\Exception $ex) {
-//            $requestData = [];
-//            $url = '';
-//        }
+        ?int $delay = null
+    ) {
+        //        $request = ApplicationContext::getContainer()->get(RequestInterface::class);
+        //        try {
+        //            $requestData = $request->all();
+        //            $url = $request->fullUrl() . '|' . $request->getHeaderLine('HTTP_REFERER');
+        //        } catch (\Exception $ex) {
+        //            $requestData = [];
+        //            $url = '';
+        //        }
 
         $url = '';
         $trace = is_array($trace) ? $trace : [$trace];
@@ -73,5 +81,4 @@ class Ding
 
         return $dingDingJob->handle();
     }
-
 }

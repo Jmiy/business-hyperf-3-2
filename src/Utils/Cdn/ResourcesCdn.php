@@ -1,8 +1,17 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Cdn;
 
-use function Hyperf\Collection\data_set;
 use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Utils\Context;
 use Business\Hyperf\Utils\Filesystem\Util;
@@ -12,19 +21,22 @@ use Hyperf\HttpMessage\Upload\UploadedFile;
 use Hyperf\Stringable\Str;
 use League\Flysystem\Config;
 use League\Flysystem\Visibility;
+
 use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_set;
 use function Hyperf\Coroutine\parallel;
 
 class ResourcesCdn
 {
-
     public static $uriPrefix = []; // 图片路径前缀
-    public static $imgUrlCn = ''; //国内
-    public static $cdnDomains = []; //css域名
+
+    public static $imgUrlCn = ''; // 国内
+
+    public static $cdnDomains = []; // css域名
 
     /**
      * @param int $storeId
-     * @return mixed|null
+     * @return null|mixed
      */
     public static function getContextKey($storeId = 1)
     {
@@ -33,20 +45,19 @@ class ResourcesCdn
     }
 
     /**
-     * 设置配置信息
+     * 设置配置信息.
      * @param int $storeId 商城id
      * @param array $configData 配置数据
      */
     public static function setConf($storeId = 1, $configData = [])
     {
-
     }
 
     /**
      * 获取属性值
      * @param int $storeId 商城id
      * @param array $configData 配置数据
-     * @param null|sting|array $key 属性名称
+     * @param null|array|sting $key 属性名称
      * @return array|mixed
      */
     public static function getAttribute($storeId = 1, $key = null, $configData = [])
@@ -56,33 +67,31 @@ class ResourcesCdn
     }
 
     /**
-     * 获取服务器地区
+     * 获取服务器地区.
      * @return string 服务器地区
      */
-
     public static function getArea()
     {
         $_area = explode('_', \Hyperf\Config\config('app.serverarea', ''));
-        $area = end($_area);
-        return $area;
+        return end($_area);
     }
 
     /**
-     * 获取资源域名
+     * 获取资源域名.
      * @param int $storeId 品牌id
      * @param int $resourceType 资源类型 0:所有 1:图片 2:视频 3:js 4:css 默认:1
-     * @param array|null $domain cdn域名
+     * @param null|array $domain cdn域名
+     * @param mixed $isCn
      * @return array 图片cdn域名
      */
     public static function getResourceTypeDomain($storeId = 1, $resourceType = 0, $isCn = false, $domain = null)
     {
-
         $area = static::getArea();
 
         $cdnDomains = static::getAttribute(
             $storeId,
             ($area ? $area . '_' : '') . 'url' . ($resourceType ? '_' . $resourceType : '')
-        );//key组成规则: area_url_1
+        ); // key组成规则: area_url_1
         $cdnDomains = explode(',', $cdnDomains);
 
         if (is_array($domain)) {
@@ -93,16 +102,16 @@ class ResourcesCdn
     }
 
     /**
-     * 获取资源域名
+     * 获取资源域名.
      * @param int $storeId 品牌id
      * @param int $resourceType 资源类型 0:所有 1:图片 2:视频 3:js 4:css 默认:1
-     * @param array|null $domain cdn域名
+     * @param null|array $domain cdn域名
+     * @param mixed $isCn
      * @return array 图片cdn域名
      */
     public static function getResourceDomain($storeId = 1, $resourceType = 1, $isCn = false, $domain = null)
     {
-
-        //获取资源cdn数据
+        // 获取资源cdn数据
         $cdnData = static::getResourceTypeDomain($storeId, $resourceType, $isCn, $domain);
 
         $num = count($cdnData);
@@ -124,14 +133,13 @@ class ResourcesCdn
      * @param int $storeId 品牌id
      * @param string $resourceUrl 资源地址
      * @param int $resourceType 资源类型 0:所有 1:图片 2:视频 3:js 4:css 默认:0
-     * @param boolean $isCn 是否使用国内cdn  false:否  true:是 默认：false
+     * @param bool $isCn 是否使用国内cdn  false:否  true:是 默认：false
      * @param string $wh 宽*高
      * @param int $mode 缩略模式：0-5 详情：https://developer.qiniu.com/dora/manual/1279/basic-processing-images-imageview2
      * @return string
      */
     public static function getResourceUrl($storeId = 1, $resourceUrl = '', $resourceType = 0, $isCn = false, $wh = '', $mode = '0')
     {
-
         if (empty($resourceUrl)) {
             return '';
         }
@@ -146,15 +154,15 @@ class ResourcesCdn
     }
 
     /**
-     * 获取图片 格式转换、缩略、剪裁 参数
+     * 获取图片 格式转换、缩略、剪裁 参数.
      * @param string $wh 宽*高
      * @param int $mode 缩略模式：0-5 详情：https://developer.qiniu.com/dora/manual/1279/basic-processing-images-imageview2
      * @param string $quality 新图的图片质量  取值范围是[1, 100]，默认75。七牛会根据原图质量算出一个修正值，取修正值和指定值中的小值。
-     *    注意：
-     *    ● 如果图片的质量值本身大于90，会根据指定值进行处理，此时修正值会失效。
-     *    ● 指定值后面可以增加 !，表示强制使用指定值，如100!。
-     *    ● 支持图片类型：jpg。
-     *    详情：https://developer.qiniu.com/dora/manual/1279/basic-processing-images-imageview2#1
+     *                        注意：
+     *                        ● 如果图片的质量值本身大于90，会根据指定值进行处理，此时修正值会失效。
+     *                        ● 指定值后面可以增加 !，表示强制使用指定值，如100!。
+     *                        ● 支持图片类型：jpg。
+     *                        详情：https://developer.qiniu.com/dora/manual/1279/basic-processing-images-imageview2#1
      * @return string
      */
     public static function getUrlParam($wh = '', $mode = '0', $quality = '75')
@@ -187,10 +195,11 @@ class ResourcesCdn
     }
 
     /**
-     * 获取上传到七牛所使用的文件URI
+     * 获取上传到七牛所使用的文件URI.
      * @param string $vitualPath 七牛虚拟路径
      * @param string $ext 文件后缀
      * @param string $fileName 文件名
+     * @param mixed $resourceType
      * @return string 文件URI
      */
     public static function getUploadFileName($resourceType = 1, $vitualPath = '', $ext = null, $fileName = '')
@@ -211,14 +220,11 @@ class ResourcesCdn
     {
         $originalName = str_replace('\\', '/', $name);
         $pos = strrpos($originalName, '/');
-        $originalName = false === $pos ? $originalName : substr($originalName, $pos + 1);
-
-        return $originalName;
+        return $pos === false ? $originalName : substr($originalName, $pos + 1);
     }
 
     public static function uploadBase64File($file = null, $vitualPath = '', $is_del = false, $isCn = false, $fileName = '', $resourceType = 1, $extData = Constant::PARAMETER_ARRAY_DEFAULT)
     {
-
         $diskData = static::getDisk($extData);
         if (data_get($diskData, Constant::CODE, 0) != 1) {
             return $diskData;
@@ -226,16 +232,16 @@ class ResourcesCdn
         $filesystem = data_get($diskData, Constant::DATA, null);
 
         $_data = [
-            Constant::RESOURCE_TYPE => $resourceType, //资源类型 1:图片 2:视频 3:js 4:css 默认:1
+            Constant::RESOURCE_TYPE => $resourceType, // 资源类型 1:图片 2:视频 3:js 4:css 默认:1
         ];
         $rs = static::getDefaultResponseData(Constant::ORDER_STATUS_SHIPPED_INT, Constant::PARAMETER_STRING_DEFAULT, $_data);
 
         $fileExtension = '.png';
         if (strpos($file, 'data:image/png;base64') !== false) {
-            $data = explode(',', $file); //data:image/png;base64,iVBORw0KGgoAAAANSUhEU
+            $data = explode(',', $file); // data:image/png;base64,iVBORw0KGgoAAAANSUhEU
             $fileContents = base64_decode(end($data));
 
-            $fileExtension = explode('/', $data[0]); //data:image/png;base64,
+            $fileExtension = explode('/', $data[0]); // data:image/png;base64,
             unset($data);
             $fileExtension = explode(';', $fileExtension[1]);
             $fileExtension = '.' . $fileExtension[0];
@@ -249,7 +255,7 @@ class ResourcesCdn
         $config = [
             Config::OPTION_VISIBILITY => Visibility::PUBLIC,
             Config::OPTION_DIRECTORY_VISIBILITY => Visibility::PUBLIC,
-            //'mimetype'=>'',
+            // 'mimetype'=>'',
         ];
         $filesystem->write(
             $path,
@@ -269,12 +275,15 @@ class ResourcesCdn
     }
 
     /**
-     * 上传文件
+     * 上传文件.
      * @param string $filePath 图片在服务器的绝对路径
      * @param string $resourceType 文件类型 1：图片 2：视频
      * @param string $vitualPath 云存储虚拟路径
-     * @param boolean $is_del 是否删除原文件  false:否  true：是  默认:false
-     * @param boolean $isCn 是否使用国内cdn  false:否  true：是  默认:false
+     * @param bool $is_del 是否删除原文件  false:否  true：是  默认:false
+     * @param bool $isCn 是否使用国内cdn  false:否  true：是  默认:false
+     * @param null|mixed $files
+     * @param mixed $fileName
+     * @param mixed $extData
      * @return array 上传结果
      */
     public static function upload($filePath, $files = null, $vitualPath = '', $is_del = false, $isCn = false, $fileName = '', $resourceType = 1, $extData = Constant::PARAMETER_ARRAY_DEFAULT)
@@ -287,7 +296,7 @@ class ResourcesCdn
         $filesystem = data_get($diskData, Constant::DATA, null);
 
         $_data = [
-            Constant::RESOURCE_TYPE => $resourceType, //资源类型 1:图片 2:视频 3:js 4:css 默认:1
+            Constant::RESOURCE_TYPE => $resourceType, // 资源类型 1:图片 2:视频 3:js 4:css 默认:1
         ];
         $rs = static::getDefaultResponseData(Constant::ORDER_STATUS_SHIPPED_INT, Constant::PARAMETER_STRING_DEFAULT, $_data);
 
@@ -296,34 +305,32 @@ class ResourcesCdn
         $distVitualPath = static::getDistVitualPath($resourceType, $vitualPath);
         $storeId = data_get($extData, Constant::DB_COLUMN_SITE_ID, 0);
 
-
-        $concurrent = 10;//count($itemIds);
+        $concurrent = 10; // count($itemIds);
         $callableData = [];
         foreach ($files as $key => $file) {
             $callableData[$key] = function () use ($filesystem, $rs, $distVitualPath, $storeId, $file, $vitualPath, $is_del, $isCn, $fileName, $resourceType, $extData) {
-
                 if (is_array($file)) {
                     return static::upload('all', $file, $vitualPath, $is_del, $isCn, $fileName, $resourceType, $extData);
                 }
 
-                if (!($file instanceof UploadedFile)) {
-//                    static::setFile(null);
+                if (! $file instanceof UploadedFile) {
+                    //                    static::setFile(null);
                     return static::uploadBase64File($file, $vitualPath, $is_del, $isCn, $fileName, $resourceType, $extData);
                 }
 
                 $isValid = data_get($extData, 'isValid', true);
-                if ($isValid && !$file->isValid()) {
+                if ($isValid && ! $file->isValid()) {
                     data_set($rs, Constant::DATA . Constant::LINKER . Constant::FILE_URL, Constant::PARAMETER_STRING_DEFAULT);
                     data_set($rs, Constant::DATA . Constant::LINKER . Constant::FILE_FULL_PATH, Constant::PARAMETER_STRING_DEFAULT);
                     data_set($rs, Constant::CODE, 10031);
-                    data_set($rs, Constant::MSG, $file->getError());//
+                    data_set($rs, Constant::MSG, $file->getError());
                     return $rs;
                 }
 
-                $originalName = static::getName($file->getClientFilename());//原始文件名
+                $originalName = static::getName($file->getClientFilename()); // 原始文件名
 
                 if (empty($fileName)) {
-                    if (data_get($extData, 'use_origin_name', Constant::PARAMETER_INT_DEFAULT)) {//如果需要使用原始文件名，就获取客户原始文件名
+                    if (data_get($extData, 'use_origin_name', Constant::PARAMETER_INT_DEFAULT)) {// 如果需要使用原始文件名，就获取客户原始文件名
                         $fileName = $originalName;
                     } else {
                         $extension = $file->getExtension();
@@ -336,7 +343,7 @@ class ResourcesCdn
                 $config = [
                     Config::OPTION_VISIBILITY => Visibility::PUBLIC,
                     Config::OPTION_DIRECTORY_VISIBILITY => Visibility::PUBLIC,
-                    //'mimetype'=>'',
+                    // 'mimetype'=>'',
                 ];
                 $path = static::normalizePath(implode('/', [$distVitualPath, $fileName]));
                 $stream = fopen($file->getRealPath(), 'r+');
@@ -360,7 +367,7 @@ class ResourcesCdn
             };
         }
 
-        if (empty($callableData)) {//如果没有消息，就直接返回
+        if (empty($callableData)) {// 如果没有消息，就直接返回
             return [];
         }
 
@@ -373,8 +380,8 @@ class ResourcesCdn
         try {
             $responseData = parallel($callableData, $concurrent);
         } catch (ParallelExecutionException $e) {
-            $responseData = $e->getResults();// 获取协程中的返回值。
-            $throwables = $e->getThrowables(); //获取协程中出现的异常。
+            $responseData = $e->getResults(); // 获取协程中的返回值。
+            $throwables = $e->getThrowables(); // 获取协程中出现的异常。
         }
 
         $uploadData = $responseData + $uploadData;
@@ -382,35 +389,33 @@ class ResourcesCdn
         if ($throwables) {
             $throwablesMessageDetailIds = array_keys($throwables);
             foreach ($callableData as $messageDetailId => $item) {
-                if (!in_array($messageDetailId, $throwablesMessageDetailIds)) {
+                if (! in_array($messageDetailId, $throwablesMessageDetailIds)) {
                     unset($callableData[$messageDetailId]);
                 }
             }
             Coroutine::sleep(rand(1, 2));
             if ($tryNum <= 2) {
-                $tryNum++;
+                ++$tryNum;
                 goto beginning;
             }
 
             $uploadData = $throwables + $uploadData;
-
         }
 
         return data_get($uploadData, [$filePath], $uploadData);
     }
 
     /**
-     * @param $url
+     * @param mixed $url
      * @return array
-     * 删除空间文件
+     *               删除空间文件
      */
     public static function deleteFiles($url)
     {
-
     }
 
     /**
-     * 获取默认的响应数据结构
+     * 获取默认的响应数据结构.
      * @param int $code 响应状态码
      * @param string $msg 响应提示
      * @param array $data 响应数据
@@ -422,7 +427,7 @@ class ResourcesCdn
     }
 
     /**
-     * 获取目的云存储虚拟路径
+     * 获取目的云存储虚拟路径.
      * @param int $resourceType 文件类型 1：图片 2：视频
      * @param string $vitualPath 云存储虚拟路径
      * @return string 目的云存储虚拟路径
@@ -430,9 +435,9 @@ class ResourcesCdn
     public static function getDistVitualPath($resourceType = 1, $vitualPath = '')
     {
         $path = implode('/', [
-            (isset(static::$uriPrefix[$resourceType]) && static::$uriPrefix[$resourceType] ? static::$uriPrefix[$resourceType] : ''),
+            isset(static::$uriPrefix[$resourceType]) && static::$uriPrefix[$resourceType] ? static::$uriPrefix[$resourceType] : '',
             $vitualPath,
-            date('Ymd')
+            date('Ymd'),
         ]);
         return static::normalizePath($path);
     }
@@ -450,7 +455,7 @@ class ResourcesCdn
     }
 
     /**
-     * 获取文件名
+     * 获取文件名.
      * @param string $ext
      * @param string $fileName
      * @return string 文件名
@@ -473,11 +478,9 @@ class ResourcesCdn
      *
      * @return string
      * @throws LogicException
-     *
      */
     public static function normalizePath($path)
     {
         return Util::normalizePath($path);
     }
-
 }

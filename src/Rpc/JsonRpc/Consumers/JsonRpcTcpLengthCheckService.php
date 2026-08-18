@@ -59,5 +59,3 @@ class JsonRpcTcpLengthCheckService extends BaseConsumer
         return Arr::collapse([$_context, $context]);
     }
 }
-
-

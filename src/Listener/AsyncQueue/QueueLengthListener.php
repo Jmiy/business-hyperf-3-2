@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Business\Hyperf\Listener\AsyncQueue;
 
 use Hyperf\AsyncQueue\Event\QueueLength;
@@ -32,7 +33,7 @@ class QueueLengthListener implements ListenerInterface
     public function listen(): array
     {
         return [
-            QueueLength::class,//每处理 500 个消息后触发	用户可以监听此事件，判断失败或超时队列是否有消息积压
+            QueueLength::class, // 每处理 500 个消息后触发	用户可以监听此事件，判断失败或超时队列是否有消息积压
         ];
     }
 

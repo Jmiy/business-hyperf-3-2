@@ -1,24 +1,33 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Middleware\Translator;
 
-use function Hyperf\Collection\data_set;
-use function Business\Hyperf\Utils\Collection\data_get;
+use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Services\DictStoreService;
 use Business\Hyperf\Services\Platform\OrderService;
-use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Utils\Response;
 use Hyperf\Context\Context;
+use Hyperf\Contract\TranslatorInterface;
+use Hyperf\Di\Annotation\Inject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-use Hyperf\Di\Annotation\Inject;
-use Hyperf\Contract\TranslatorInterface;
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_set;
 
 class LangMiddleware
 {
-
     /**
      * @Inject
      * @var TranslatorInterface
@@ -27,31 +36,28 @@ class LangMiddleware
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-
         // 只在当前请求或协程生命周期有效
         $this->translator->setLocale(getCountry());
 
         $serverParams = $request->getServerParams();
-        $requestUri = data_get($serverParams, 'request_uri');//$request->getRequestUri();
+        $requestUri = data_get($serverParams, 'request_uri'); // $request->getRequestUri();
 
         $requestData = $request->getParsedBody();
 
         $storeId = data_get($requestData, Constant::DB_TABLE_STORE_ID, Constant::PARAMETER_INT_DEFAULT);
         $orderNo = data_get($requestData, Constant::DB_TABLE_ORDER_NO, Constant::PARAMETER_STRING_DEFAULT);
 
-        if (!empty($orderNo) && is_string($orderNo)) {
-
-            if (!FunctionHelper::checkOrderNo($orderNo)) {
+        if (! empty($orderNo) && is_string($orderNo)) {
+            if (! FunctionHelper::checkOrderNo($orderNo)) {
                 return Response::json(...Response::getResponseData(Response::getDefaultResponseData(39006)));
             }
 
-            $countries = DictStoreService::getByTypeAndKey($storeId, 'lang', 'country', true); //国家
-            $interfaceLangList = DictStoreService::getListByType($storeId, 'interface_lang'); //接口
+            $countries = DictStoreService::getByTypeAndKey($storeId, 'lang', 'country', true); // 国家
+            $interfaceLangList = DictStoreService::getListByType($storeId, 'interface_lang'); // 接口
 
-            if (!empty($countries) && $interfaceLangList->isNotEmpty()) {
+            if (! empty($countries) && $interfaceLangList->isNotEmpty()) {
                 $countries = explode(',', $countries);
-                if (!empty($countries) && $interfaceLangList->firstWhere('conf_value', $requestUri)) {
-
+                if (! empty($countries) && $interfaceLangList->firstWhere('conf_value', $requestUri)) {
                     $orderData = OrderService::getOrderData($orderNo, '', Constant::PLATFORM_SERVICE_AMAZON, $storeId);
                     if (data_get($orderData, Constant::CODE, 0) != 1) {
                         return Response::json(...Response::getResponseData(Response::getDefaultResponseData(30002)));
@@ -83,7 +89,5 @@ class LangMiddleware
         }
 
         return $handler->handle($request);
-
     }
-
 }

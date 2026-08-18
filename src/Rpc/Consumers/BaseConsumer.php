@@ -16,32 +16,24 @@ use Business\Hyperf\Constants\Constant as BusinessConstant;
 use GuzzleHttp\RequestOptions;
 use Hyperf\Collection\Arr;
 use Hyperf\Context\Context;
-use Hyperf\Contract\IdGeneratorInterface;
-use Hyperf\RpcClient\AbstractServiceClient;
-use Hyperf\RpcClient\Exception\RequestException;
-use Psr\Container\ContainerInterface;
+use Hyperf\Rpc\Context as RpcContext;
+use RuntimeException;
+
 use function Hyperf\Collection\data_get;
 use function Hyperf\Config\config;
 use function Hyperf\Support\call;
 use function Hyperf\Support\make;
 
-use Hyperf\Rpc\Context as RpcContext;
-
 class BaseConsumer
 {
-
     /**
      * The service name of the target service.
-     *
-     * @var string
      */
     public static string $serviceName = '';
 
     /**
      * The protocol of the target service, this protocol name
      * needs to register into \Hyperf\Rpc\ProtocolManager.
-     *
-     * @var string
      */
     public static string $protocol = 'jsonrpc-http';
 
@@ -51,7 +43,39 @@ class BaseConsumer
      */
     public static string $loadBalancer = 'random';
 
-    public static $instance = null;
+    public static $instance;
+
+    /**
+     * Handle dynamic, static calls to the object.
+     *
+     * @param string $method
+     * @param array $args
+     * @return mixed
+     *
+     * @throws RuntimeException
+     */
+    public function __call($method, $args)
+    {
+        return call([static::class, $method], $args);
+    }
+
+    /**
+     * Handle dynamic, static calls to the object.
+     *
+     * @param string $method
+     * @param array $args
+     * @return mixed
+     *
+     * @throws RuntimeException
+     */
+    public static function __callStatic($method, $args)
+    {
+        $rpcContext = static::getRpcContext();
+
+        static::setRpcContext($rpcContext);
+
+        return static::getInstance()->__request($method, $args);
+    }
 
     public static function setHeaders(array $context = [])
     {
@@ -67,7 +91,7 @@ class BaseConsumer
                     getApplicationContainer(),
                     static::$serviceName,
                     static::$protocol,
-                    static::$loadBalancer
+                    static::$loadBalancer,
                 ]
             );
         }
@@ -76,18 +100,16 @@ class BaseConsumer
     }
 
     /**
-     * 获取 rpc 上下文
+     * 获取 rpc 上下文.
      * @return array
      */
     public static function getRpcContext()
     {
         $serviceName = config('app_name');
-        $context = [
+        return [
             BusinessConstant::RPC_TOKEN_KEY => config('authorization.' . $serviceName . '.' . BusinessConstant::RPC_TOKEN_KEY),
-            BusinessConstant::RPC_SERVICE_APP_KEY => $serviceName,//服务提供者
+            BusinessConstant::RPC_SERVICE_APP_KEY => $serviceName, // 服务提供者
         ];
-
-        return $context;
     }
 
     public static function setRpcContext($context)
@@ -96,8 +118,8 @@ class BaseConsumer
 
         $proxy = data_get($context, ['requestOptions', RequestOptions::PROXY]);
         $consumersConfig = config('services.consumers');
-        $proxy = $proxy ?: data_get($consumersConfig, [static::$serviceName, 'registry', RequestOptions::PROXY]);//config('services.consumers.' . static::$serviceName . '.registry.' . RequestOptions::PROXY)
-        $proxy = $proxy ?: data_get($consumersConfig, [static::$serviceName, RequestOptions::PROXY]);//config('services.consumers.' . static::$serviceName . '.' . RequestOptions::PROXY);
+        $proxy = $proxy ?: data_get($consumersConfig, [static::$serviceName, 'registry', RequestOptions::PROXY]); // config('services.consumers.' . static::$serviceName . '.registry.' . RequestOptions::PROXY)
+        $proxy = $proxy ?: data_get($consumersConfig, [static::$serviceName, RequestOptions::PROXY]); // config('services.consumers.' . static::$serviceName . '.' . RequestOptions::PROXY);
         if ($proxy) {
             $context['requestOptions'][RequestOptions::PROXY] = $proxy;
         }
@@ -107,8 +129,8 @@ class BaseConsumer
             $context,
             [
                 BusinessConstant::RPC_PROTOCOL_KEY => static::$protocol,
-                BusinessConstant::RPC_APP_KEY => config('app_name'),//请求服务的客户端应用
-            ]
+                BusinessConstant::RPC_APP_KEY => config('app_name'), // 请求服务的客户端应用
+            ],
         ]);
 
         Context::set(BusinessConstant::JSON_RPC_HEADERS_KEY, $contextHeaders);
@@ -122,39 +144,4 @@ class BaseConsumer
 
         getApplicationContainer()->get(RpcContext::class)->setData($rpcContext);
     }
-
-    /**
-     * Handle dynamic, static calls to the object.
-     *
-     * @param string $method
-     * @param array $args
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    public function __call($method, $args)
-    {
-        return call([static::class, $method], $args);
-    }
-
-    /**
-     * Handle dynamic, static calls to the object.
-     *
-     * @param string $method
-     * @param array $args
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    public static function __callStatic($method, $args)
-    {
-
-        $rpcContext = static::getRpcContext();
-
-        static::setRpcContext($rpcContext);
-
-        return static::getInstance()->__request($method, $args);
-    }
 }
-
-

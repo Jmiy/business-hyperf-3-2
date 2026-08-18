@@ -18,11 +18,6 @@ class JsonParser
 {
     /**
      * 解码
-     * @param string $rawBody
-     * @param bool|null $associative
-     * @param int $depth
-     * @param int $flags
-     * @return mixed
      */
     public static function parse(string $rawBody, ?bool $associative = null, int $depth = 512, int $flags = 0): mixed
     {

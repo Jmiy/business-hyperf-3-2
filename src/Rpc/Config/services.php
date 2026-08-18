@@ -9,8 +9,8 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
-use Business\Hyperf\Rpc\Grpc\Consumers\GRpcService;
 use App\Service\Sso\SsoService;
+use Business\Hyperf\Rpc\Grpc\Consumers\GRpcService;
 use GuzzleHttp\RequestOptions;
 use Hyperf\Collection\Arr;
 use Hyperf\RpcMultiplex\Constant;

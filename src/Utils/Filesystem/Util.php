@@ -1,5 +1,15 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Filesystem;
 
 use League\Flysystem\Util\MimeType;
@@ -56,9 +66,6 @@ class Util
     /**
      * Map result arrays.
      *
-     * @param array $object
-     * @param array $map
-     *
      * @return array mapped result
      */
     public static function map(array $object, array $map)
@@ -66,7 +73,7 @@ class Util
         $result = [];
 
         foreach ($map as $from => $to) {
-            if ( ! isset($object[$from])) {
+            if (! isset($object[$from])) {
                 continue;
             }
 
@@ -81,9 +88,8 @@ class Util
      *
      * @param string $path
      *
-     * @throws LogicException
-     *
      * @return string
+     * @throws LogicException
      */
     public static function normalizePath($path)
     {
@@ -95,9 +101,8 @@ class Util
      *
      * @param string $path
      *
-     * @throws LogicException
-     *
      * @return string
+     * @throws LogicException
      */
     public static function normalizeRelativePath($path)
     {
@@ -110,42 +115,22 @@ class Util
             switch ($part) {
                 case '':
                 case '.':
-                break;
-
-            case '..':
-                if (empty($parts)) {
-                    throw new LogicException(
-                        'Path is outside of the defined root, path: [' . $path . ']'
-                    );
-                }
-                array_pop($parts);
-                break;
-
-            default:
-                $parts[] = $part;
-                break;
+                    break;
+                case '..':
+                    if (empty($parts)) {
+                        throw new LogicException(
+                            'Path is outside of the defined root, path: [' . $path . ']'
+                        );
+                    }
+                    array_pop($parts);
+                    break;
+                default:
+                    $parts[] = $part;
+                    break;
             }
         }
 
         return implode('/', $parts);
-    }
-
-    /**
-     * Removes unprintable characters and invalid unicode characters.
-     *
-     * @param string $path
-     *
-     * @return string $path
-     */
-    protected static function removeFunkyWhiteSpace($path)
-    {
-        // We do this check in a loop, since removing invalid unicode characters
-        // can lead to new characters being created.
-        while (preg_match('#\p{C}+|^\./#u', $path)) {
-            $path = preg_replace('#\p{C}+|^\./#u', '', $path);
-        }
-
-        return $path;
     }
 
     /**
@@ -176,16 +161,16 @@ class Util
     /**
      * Guess MIME Type based on the path of the file and it's content.
      *
-     * @param string          $path
-     * @param string|resource $content
+     * @param string $path
+     * @param resource|string $content
      *
-     * @return string|null MIME Type or NULL if no extension detected
+     * @return null|string MIME Type or NULL if no extension detected
      */
     public static function guessMimeType($path, $content)
     {
         $mimeType = MimeType::detectByContent($content);
 
-        if ( ! (empty($mimeType) || in_array($mimeType, ['application/x-empty', 'text/plain', 'text/x-asm']))) {
+        if (! (empty($mimeType) || in_array($mimeType, ['application/x-empty', 'text/plain', 'text/x-asm']))) {
             return $mimeType;
         }
 
@@ -195,8 +180,6 @@ class Util
     /**
      * Emulate directories.
      *
-     * @param array $listing
-     *
      * @return array listing with emulated directories
      */
     public static function emulateDirectories(array $listing)
@@ -205,7 +188,7 @@ class Util
         $listedDirectories = [];
 
         foreach ($listing as $object) {
-            list($directories, $listedDirectories) = static::emulateObjectDirectories($object, $directories, $listedDirectories);
+            [$directories, $listedDirectories] = static::emulateObjectDirectories($object, $directories, $listedDirectories);
         }
 
         $directories = array_diff(array_unique($directories), array_unique($listedDirectories));
@@ -267,13 +250,13 @@ class Util
      *
      * @param resource $resource
      *
-     * @return int|null stream size
+     * @return null|int stream size
      */
     public static function getStreamSize($resource)
     {
         $stat = fstat($resource);
 
-        if ( ! is_array($stat) || ! isset($stat['size'])) {
+        if (! is_array($stat) || ! isset($stat['size'])) {
             return null;
         }
 
@@ -281,11 +264,25 @@ class Util
     }
 
     /**
-     * Emulate the directories of a single object.
+     * Removes unprintable characters and invalid unicode characters.
      *
-     * @param array $object
-     * @param array $directories
-     * @param array $listedDirectories
+     * @param string $path
+     *
+     * @return string $path
+     */
+    protected static function removeFunkyWhiteSpace($path)
+    {
+        // We do this check in a loop, since removing invalid unicode characters
+        // can lead to new characters being created.
+        while (preg_match('#\p{C}+|^\./#u', $path)) {
+            $path = preg_replace('#\p{C}+|^\./#u', '', $path);
+        }
+
+        return $path;
+    }
+
+    /**
+     * Emulate the directories of a single object.
      *
      * @return array
      */
@@ -295,7 +292,7 @@ class Util
             $listedDirectories[] = $object['path'];
         }
 
-        if ( ! isset($object['dirname']) || trim($object['dirname']) === '') {
+        if (! isset($object['dirname']) || trim($object['dirname']) === '') {
             return [$directories, $listedDirectories];
         }
 

@@ -1,13 +1,20 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace Business\Hyperf\Command;
 
-use Hyperf\Command\Command as HyperfCommand;
 use Hyperf\Command\Annotation\Command;
+use Hyperf\Command\Command as HyperfCommand;
 use Psr\Container\ContainerInterface;
-
 use Symfony\Component\Console\Input\InputOption;
 
 /**
@@ -34,6 +41,12 @@ class TestCommand extends HyperfCommand
         $this->setDescription('test:command Demo Command');
     }
 
+    public function handle()
+    {
+        var_dump('Hello test:command!===foo===>' . $this->input->getOption('foo'));
+        //        $this->line('Hello test:command!===foo===>'.$this->input->getOption('foo'), 'info');
+    }
+
     protected function getOptions()
     {
         /**
@@ -44,16 +57,10 @@ class TestCommand extends HyperfCommand
          * InputOption::VALUE_REQUIRED	2	选项必填
          * InputOption::VALUE_OPTIONAL	4	选项可选
          * InputOption::VALUE_IS_ARRAY	8	选项数组
-         * 如： php bin/hyperf.php demo:command -o -N=姓名 -A=数组 -A=数组1
+         * 如： php bin/hyperf.php demo:command -o -N=姓名 -A=数组 -A=数组1.
          */
         return [
             ['foo', 'F', InputOption::VALUE_OPTIONAL, '测试在 Command 中运行其他命令', 'foo'],
         ];
-    }
-
-    public function handle()
-    {
-        var_dump('Hello test:command!===foo===>'.$this->input->getOption('foo'));
-//        $this->line('Hello test:command!===foo===>'.$this->input->getOption('foo'), 'info');
     }
 }

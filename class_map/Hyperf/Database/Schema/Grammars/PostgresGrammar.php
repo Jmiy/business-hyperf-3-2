@@ -1,10 +1,21 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Hyperf\Database\Schema\Grammars;
 
-use Hyperf\Support\Fluent;
-use function Hyperf\Support\with;
 use Hyperf\Database\Schema\Blueprint;
+use Hyperf\Support\Fluent;
+
+use function Hyperf\Support\with;
 
 class PostgresGrammar extends Grammar
 {
@@ -59,13 +70,12 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a create table command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileCreate(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('%s table %s (%s)',
+        return sprintf(
+            '%s table %s (%s)',
             $blueprint->temporary ? 'create temporary' : 'create',
             $this->wrapTable($blueprint),
             implode(', ', $this->getColumns($blueprint))
@@ -75,13 +85,12 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a column addition command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('alter table %s %s',
+        return sprintf(
+            'alter table %s %s',
             $this->wrapTable($blueprint),
             implode(', ', $this->prefixArray('add column', $this->getColumns($blueprint)))
         );
@@ -90,27 +99,24 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a primary key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compilePrimary(Blueprint $blueprint, Fluent $command)
     {
         $columns = $this->columnize($command->columns);
 
-        return 'alter table '.$this->wrapTable($blueprint)." add primary key ({$columns})";
+        return 'alter table ' . $this->wrapTable($blueprint) . " add primary key ({$columns})";
     }
 
     /**
      * Compile a unique key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileUnique(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('alter table %s add constraint %s unique (%s)',
+        return sprintf(
+            'alter table %s add constraint %s unique (%s)',
             $this->wrapTable($blueprint),
             $this->wrap($command->index),
             $this->columnize($command->columns)
@@ -120,16 +126,15 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a plain index key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileIndex(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('create index %s on %s%s (%s)',
+        return sprintf(
+            'create index %s on %s%s (%s)',
             $this->wrap($command->index),
             $this->wrapTable($blueprint),
-            $command->algorithm ? ' using '.$command->algorithm : '',
+            $command->algorithm ? ' using ' . $command->algorithm : '',
             $this->columnize($command->columns)
         );
     }
@@ -137,8 +142,6 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a spatial index key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileSpatialIndex(Blueprint $blueprint, Fluent $command)
@@ -151,8 +154,6 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a foreign key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileForeign(Blueprint $blueprint, Fluent $command)
@@ -177,47 +178,43 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a drop table command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDrop(Blueprint $blueprint, Fluent $command)
     {
-        return 'drop table '.$this->wrapTable($blueprint);
+        return 'drop table ' . $this->wrapTable($blueprint);
     }
 
     /**
      * Compile a drop table (if exists) command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropIfExists(Blueprint $blueprint, Fluent $command)
     {
-        return 'drop table if exists '.$this->wrapTable($blueprint);
+        return 'drop table if exists ' . $this->wrapTable($blueprint);
     }
 
     /**
      * Compile the SQL needed to drop all tables.
      *
-     * @param  array  $tables
+     * @param array $tables
      * @return string
      */
     public function compileDropAllTables($tables)
     {
-        return 'drop table "'.implode('","', $tables).'" cascade';
+        return 'drop table "' . implode('","', $tables) . '" cascade';
     }
 
     /**
      * Compile the SQL needed to drop all views.
      *
-     * @param  array  $views
+     * @param array $views
      * @return string
      */
     public function compileDropAllViews($views)
     {
-        return 'drop view "'.implode('","', $views).'" cascade';
+        return 'drop view "' . implode('","', $views) . '" cascade';
     }
 
     /**
@@ -228,13 +225,13 @@ class PostgresGrammar extends Grammar
      */
     public function compileDropAllTypes($types)
     {
-        return 'drop type "'.implode('","', $types).'" cascade';
+        return 'drop type "' . implode('","', $types) . '" cascade';
     }
 
     /**
      * Compile the SQL needed to retrieve all table names.
      *
-     * @param  string  $schema
+     * @param string $schema
      * @return string
      */
     public function compileGetAllTables($schema)
@@ -245,7 +242,7 @@ class PostgresGrammar extends Grammar
     /**
      * Compile the SQL needed to retrieve all view names.
      *
-     * @param  string  $schema
+     * @param string $schema
      * @return string
      */
     public function compileGetAllViews($schema)
@@ -266,36 +263,30 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a drop column command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
     {
         $columns = $this->prefixArray('drop column', $this->wrapArray($command->columns));
 
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return 'alter table ' . $this->wrapTable($blueprint) . ' ' . implode(', ', $columns);
     }
 
     /**
      * Compile a drop primary key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropPrimary(Blueprint $blueprint, Fluent $command)
     {
         $index = $this->wrap("{$blueprint->getTable()}_pkey");
 
-        return 'alter table '.$this->wrapTable($blueprint)." drop constraint {$index}";
+        return 'alter table ' . $this->wrapTable($blueprint) . " drop constraint {$index}";
     }
 
     /**
      * Compile a drop unique key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropUnique(Blueprint $blueprint, Fluent $command)
@@ -308,8 +299,6 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a drop index command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropIndex(Blueprint $blueprint, Fluent $command)
@@ -320,8 +309,6 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a drop spatial index command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropSpatialIndex(Blueprint $blueprint, Fluent $command)
@@ -332,8 +319,6 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a drop foreign key command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileDropForeign(Blueprint $blueprint, Fluent $command)
@@ -346,27 +331,24 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a rename table command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileRename(Blueprint $blueprint, Fluent $command)
     {
         $from = $this->wrapTable($blueprint);
 
-        return "alter table {$from} rename to ".$this->wrapTable($command->to);
+        return "alter table {$from} rename to " . $this->wrapTable($command->to);
     }
 
     /**
      * Compile a rename index command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileRenameIndex(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('alter index %s rename to %s',
+        return sprintf(
+            'alter index %s rename to %s',
             $this->wrap($command->from),
             $this->wrap($command->to)
         );
@@ -395,23 +377,31 @@ class PostgresGrammar extends Grammar
     /**
      * Compile a comment command.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $command
      * @return string
      */
     public function compileComment(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('comment on column %s.%s is %s',
+        return sprintf(
+            'comment on column %s.%s is %s',
             $this->wrapTable($blueprint),
             $this->wrap($command->column->name),
-            "'".str_replace("'", "''", $command->value)."'"
+            "'" . str_replace("'", "''", $command->value) . "'"
         );
+    }
+
+    /**
+     * Create the column definition for a spatial MultiLineString type.
+     *
+     * @return string
+     */
+    public function typeMultiLineString(Fluent $column)
+    {
+        return $this->formatPostGisType('multilinestring');
     }
 
     /**
      * Create the column definition for a char type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeChar(Fluent $column)
@@ -422,7 +412,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a string type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeString(Fluent $column)
@@ -433,7 +422,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a text type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeText(Fluent $column)
@@ -444,7 +432,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a medium text type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMediumText(Fluent $column)
@@ -455,7 +442,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a long text type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeLongText(Fluent $column)
@@ -466,7 +452,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for an integer type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeInteger(Fluent $column)
@@ -477,7 +462,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a big integer type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeBigInteger(Fluent $column)
@@ -488,7 +472,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a medium integer type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMediumInteger(Fluent $column)
@@ -499,7 +482,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a tiny integer type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeTinyInteger(Fluent $column)
@@ -510,7 +492,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a small integer type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeSmallInteger(Fluent $column)
@@ -521,8 +502,7 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a generatable column.
      *
-     * @param  string  $type
-     * @param \Hyperf\Support\Fluent $column
+     * @param string $type
      * @return string
      */
     protected function generatableColumn($type, Fluent $column)
@@ -556,7 +536,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a float type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeFloat(Fluent $column)
@@ -567,7 +546,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a double type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeDouble(Fluent $column)
@@ -578,7 +556,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a real type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeReal(Fluent $column)
@@ -589,7 +566,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a decimal type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeDecimal(Fluent $column)
@@ -600,7 +576,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a boolean type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeBoolean(Fluent $column)
@@ -611,7 +586,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for an enumeration type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeEnum(Fluent $column)
@@ -626,7 +600,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a json type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeJson(Fluent $column)
@@ -637,7 +610,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a jsonb type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeJsonb(Fluent $column)
@@ -648,7 +620,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a date type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeDate(Fluent $column)
@@ -659,7 +630,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a date-time type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeDateTime(Fluent $column)
@@ -670,7 +640,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a date-time (with time zone) type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeDateTimeTz(Fluent $column)
@@ -681,55 +650,50 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a time type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeTime(Fluent $column)
     {
-        return "time($column->precision) without time zone";
+        return "time({$column->precision}) without time zone";
     }
 
     /**
      * Create the column definition for a time (with time zone) type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeTimeTz(Fluent $column)
     {
-        return "time($column->precision) with time zone";
+        return "time({$column->precision}) with time zone";
     }
 
     /**
      * Create the column definition for a timestamp type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeTimestamp(Fluent $column)
     {
-        $columnType = "timestamp($column->precision) without time zone";
+        $columnType = "timestamp({$column->precision}) without time zone";
 
-        return $column->useCurrent ? "$columnType default CURRENT_TIMESTAMP" : $columnType;
+        return $column->useCurrent ? "{$columnType} default CURRENT_TIMESTAMP" : $columnType;
     }
 
     /**
      * Create the column definition for a timestamp (with time zone) type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeTimestampTz(Fluent $column)
     {
-        $columnType = "timestamp($column->precision) with time zone";
+        $columnType = "timestamp({$column->precision}) with time zone";
 
-        return $column->useCurrent ? "$columnType default CURRENT_TIMESTAMP" : $columnType;
+        return $column->useCurrent ? "{$columnType} default CURRENT_TIMESTAMP" : $columnType;
     }
 
     /**
      * Create the column definition for a year type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeYear(Fluent $column)
@@ -740,7 +704,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a binary type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeBinary(Fluent $column)
@@ -751,7 +714,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a uuid type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeUuid(Fluent $column)
@@ -762,7 +724,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for an IP address type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeIpAddress(Fluent $column)
@@ -773,7 +734,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a MAC address type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMacAddress(Fluent $column)
@@ -784,7 +744,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial Geometry type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeGeometry(Fluent $column)
@@ -795,7 +754,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial Point type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typePoint(Fluent $column)
@@ -806,7 +764,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial LineString type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeLineString(Fluent $column)
@@ -817,7 +774,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial Polygon type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typePolygon(Fluent $column)
@@ -828,7 +784,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial GeometryCollection type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeGeometryCollection(Fluent $column)
@@ -839,7 +794,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial MultiPoint type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMultiPoint(Fluent $column)
@@ -848,20 +802,8 @@ class PostgresGrammar extends Grammar
     }
 
     /**
-     * Create the column definition for a spatial MultiLineString type.
-     *
-     * @param \Hyperf\Support\Fluent $column
-     * @return string
-     */
-    public function typeMultiLineString(Fluent $column)
-    {
-        return $this->formatPostGisType('multilinestring');
-    }
-
-    /**
      * Create the column definition for a spatial MultiPolygon type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMultiPolygon(Fluent $column)
@@ -872,7 +814,6 @@ class PostgresGrammar extends Grammar
     /**
      * Create the column definition for a spatial MultiPolygonZ type.
      *
-     * @param \Hyperf\Support\Fluent $column
      * @return string
      */
     protected function typeMultiPolygonZ(Fluent $column)
@@ -881,36 +822,21 @@ class PostgresGrammar extends Grammar
     }
 
     /**
-     * Format the column definition for a PostGIS spatial type.
-     *
-     * @param  string  $type
-     * @return string
-     */
-    private function formatPostGisType(string $type)
-    {
-        return "geography($type, 4326)";
-    }
-
-    /**
      * Get the SQL for a collation column modifier.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $column
-     * @return string|null
+     * @return null|string
      */
     protected function modifyCollate(Blueprint $blueprint, Fluent $column)
     {
         if (! is_null($column->collation)) {
-            return ' collate '.$this->wrapValue($column->collation);
+            return ' collate ' . $this->wrapValue($column->collation);
         }
     }
 
     /**
      * Get the SQL for a nullable column modifier.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $column
-     * @return string|null
+     * @return null|string
      */
     protected function modifyNullable(Blueprint $blueprint, Fluent $column)
     {
@@ -920,28 +846,34 @@ class PostgresGrammar extends Grammar
     /**
      * Get the SQL for a default column modifier.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $column
-     * @return string|null
+     * @return null|string
      */
     protected function modifyDefault(Blueprint $blueprint, Fluent $column)
     {
         if (! is_null($column->default)) {
-            return ' default '.$this->getDefaultValue($column->default);
+            return ' default ' . $this->getDefaultValue($column->default);
         }
     }
 
     /**
      * Get the SQL for an auto-increment column modifier.
      *
-     * @param  \Hyperf\Database\Schema\Blueprint  $blueprint
-     * @param \Hyperf\Support\Fluent $column
-     * @return string|null
+     * @return null|string
      */
     protected function modifyIncrement(Blueprint $blueprint, Fluent $column)
     {
         if ((in_array($column->type, $this->serials) || ($column->generatedAs !== null)) && $column->autoIncrement) {
             return ' primary key';
         }
+    }
+
+    /**
+     * Format the column definition for a PostGIS spatial type.
+     *
+     * @return string
+     */
+    private function formatPostGisType(string $type)
+    {
+        return "geography({$type}, 4326)";
     }
 }

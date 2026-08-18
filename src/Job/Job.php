@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 /**
- * Job
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
 namespace Business\Hyperf\Job;
@@ -11,5 +16,4 @@ use Hyperf\AsyncQueue\Job as AsyncQueueJob;
 
 abstract class Job extends AsyncQueueJob
 {
-
 }

@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 /**
  * This file is part of Hyperf.
  *
@@ -10,47 +9,48 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
-
-use Hyperf\Support\Network;
-use Psr\Http\Message\ResponseInterface;
-use Swoole\Server;
-use function Hyperf\Collection\data_set;
-use function Hyperf\Support\make;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Context\ApplicationContext;
-use Hyperf\Collection\Arr;
-use Hyperf\Coroutine\Coroutine;
-use Hyperf\Stringable\Str;
-use Business\Hyperf\Utils\Arrays\MyArr;
-use Business\Hyperf\Log\Loger;
-use function Hyperf\Coroutine\go;
 use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Job\PublicJob;
+use Business\Hyperf\Log\Loger;
 use Business\Hyperf\Service\BaseService;
+use Business\Hyperf\Utils\Arrays\MyArr;
 use Business\Hyperf\Utils\Support\Facades\Queue;
 use Carbon\Carbon;
-use Hyperf\Contract\ConfigInterface;
-use Hyperf\HttpServer\Contract\RequestInterface;
-use Hyperf\Snowflake\IdGeneratorInterface;
+use Hyperf\Collection\Arr;
+use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\Context;
-use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use Hyperf\Contract\ConfigInterface;
 use Hyperf\Contract\TranslatorInterface;
+use Hyperf\Coroutine\Coroutine;
+use Hyperf\HttpServer\Contract\RequestInterface;
+use Hyperf\HttpServer\Response;
+use Hyperf\Snowflake\IdGeneratorInterface;
+use Hyperf\Stringable\Str;
+use Hyperf\Support\Network;
 use Hyperf\Validation\Contract\ValidatorFactoryInterface;
+use Hypert\Database\Model\Collection;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
-use Hyperf\Context\RequestContext;
+use Swoole\Server;
 
-if (!function_exists('getApplicationContainer')) {
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_set;
+use function Hyperf\Coroutine\go;
+use function Hyperf\Support\make;
+
+if (! function_exists('getApplicationContainer')) {
     /**
      * Return a Application Container.
-     * @return ContainerInterface|null
-     * @throws \TypeError
+     * @throws TypeError
      */
-    function getApplicationContainer(): ContainerInterface|null
+    function getApplicationContainer(): ?ContainerInterface
     {
-
-        //通过应用容器 获取配置类对象
-        if (!ApplicationContext::hasContainer()) {
+        // 通过应用容器 获取配置类对象
+        if (! ApplicationContext::hasContainer()) {
             throw new RuntimeException('The application context lacks the container.');
         }
 
@@ -58,28 +58,24 @@ if (!function_exists('getApplicationContainer')) {
     }
 }
 
-if (!function_exists('getConfigInterface')) {
+if (! function_exists('getConfigInterface')) {
     /**
      * Return a ConfigInterface.
-     *
-     * @return ConfigInterface
      */
     function getConfigInterface(): ConfigInterface
     {
         $container = getApplicationContainer();
-        if (!$container->has(ConfigInterface::class)) {
+        if (! $container->has(ConfigInterface::class)) {
             throw new RuntimeException('ConfigInterface is missing in container.');
         }
         return $container->get(ConfigInterface::class);
     }
 }
 
-if (!function_exists('getJobData')) {
+if (! function_exists('getJobData')) {
     /**
-     * 获取 job 执行配置数据
-     * @param \Closure|object|string|func|mixed $callback
-     * @param string $method
-     * @param mixed $parameters
+     * 获取 job 执行配置数据.
+     * @param Closure|func|mixed|object|string $callback
      * @param null|array $request
      * @param array $extData
      * @return array
@@ -91,27 +87,27 @@ if (!function_exists('getJobData')) {
                 Constant::SERVICE => $callback,
                 Constant::METHOD => $method,
                 Constant::PARAMETERS => $parameters,
-//                Constant::REQUEST_DATA => $request ?? (getApplicationContainer()->get(RequestInterface::class) ? getApplicationContainer()->get(RequestInterface::class)->all():[]),
+                //                Constant::REQUEST_DATA => $request ?? (getApplicationContainer()->get(RequestInterface::class) ? getApplicationContainer()->get(RequestInterface::class)->all():[]),
                 Constant::REQUEST_DATA => $request,
             ],
-            $extData
+            $extData,
         ]);
     }
 }
 
-if (!function_exists('pushQueue')) {
+if (! function_exists('pushQueue')) {
     /**
      * Push a new job onto the queue.
      *
-     * @param string|object|array $job
+     * @param array|object|string $job
      * @param mixed $data
-     * @param string|null $channel 队列 channel
+     * @param null|string $channel 队列 channel
      * @return mixed
      */
     function pushQueue($job, $data = '', $channel = null)
     {
-        $delay = data_get($job, Constant::QUEUE_DELAY, 0);//延迟时间 单位：秒
-        $queueUnsetKeys = data_get($job, ['queueUnsetKeys']);//要清空的数据
+        $delay = data_get($job, Constant::QUEUE_DELAY, 0); // 延迟时间 单位：秒
+        $queueUnsetKeys = data_get($job, ['queueUnsetKeys']); // 要清空的数据
 
         $connection = data_get($job, Constant::QUEUE_CONNECTION);
         $channel = $channel !== null ? $channel : data_get($job, Constant::QUEUE_CHANNEL);
@@ -128,7 +124,7 @@ if (!function_exists('pushQueue')) {
                     Constant::RETRY_MAX,
                     Constant::SLEEP_MIN,
                     Constant::SLEEP_MAX,
-                    Constant::QUEUE_DELAY
+                    Constant::QUEUE_DELAY,
                 ];
             }
 
@@ -141,7 +137,7 @@ if (!function_exists('pushQueue')) {
             }
 
             $data = [
-                Constant::DATA => $job
+                Constant::DATA => $job,
             ];
             $job = PublicJob::class;
         }
@@ -151,7 +147,6 @@ if (!function_exists('pushQueue')) {
         try {
             return Queue::push($job, $data, $delay, $connection, $channel);
         } catch (Throwable $exc) {
-
             if ($retryPush < 10) {
                 $retryPush = $retryPush + 1;
                 Coroutine::sleep(rand(3, 10));
@@ -164,45 +159,42 @@ if (!function_exists('pushQueue')) {
         }
 
         return false;
-
     }
 }
 
-if (!function_exists('getInternalIp')) {
+if (! function_exists('getInternalIp')) {
     /**
      * 获取服务器ip.
-     * @return string|\RuntimeException
+     * @return RuntimeException|string
      */
     function getInternalIp(): string
     {
-        //获取本服务的host
-//        $host = config('services.rpc_service_provider.local.host', null);
-//        if ($host !== null) {
-//            return $host;
-//        }
+        // 获取本服务的host
+        //        $host = config('services.rpc_service_provider.local.host', null);
+        //        if ($host !== null) {
+        //            return $host;
+        //        }
 
         return Network::ip();
-
-//        $ips = swoole_get_local_ip();
-//        if (is_array($ips) && !empty($ips)) {
-//            return current($ips);
-//        }
-//        /** @var mixed|string $ip */
-//        $ip = gethostbyname(gethostname());
-//        if (is_string($ip)) {
-//            return $ip;
-//        }
-//        throw new \RuntimeException('Can not get the internal IP.');
+        //        $ips = swoole_get_local_ip();
+        //        if (is_array($ips) && !empty($ips)) {
+        //            return current($ips);
+        //        }
+        //        /** @var mixed|string $ip */
+        //        $ip = gethostbyname(gethostname());
+        //        if (is_string($ip)) {
+        //            return $ip;
+        //        }
+        //        throw new \RuntimeException('Can not get the internal IP.');
     }
 }
 
-if (!function_exists('app')) {
+if (! function_exists('app')) {
     /**
      * Get the available container instance.
      *
-     * @param string|null $make
-     * @param array $parameters
-     * @return mixed|\Psr\Container\ContainerInterface
+     * @param null|string $make
+     * @return ContainerInterface|mixed
      */
     function app($make = null, array $parameters = [])
     {
@@ -212,14 +204,14 @@ if (!function_exists('app')) {
 
         if (empty($parameters)) {
             $container = getApplicationContainer();
-            //var_dump($make, $container->has($make));
+            // var_dump($make, $container->has($make));
             if ($container->has($make)) {
                 return $container->get($make);
             }
 
             $config = $container->get(ConfigInterface::class);
             $_make = $config->get('dependencies.' . $make);
-            //var_dump($_make, $container->has($_make));
+            // var_dump($_make, $container->has($_make));
 
             if ($container->has($_make)) {
                 return $container->get($_make);
@@ -229,12 +221,10 @@ if (!function_exists('app')) {
         }
 
         return make($make, $parameters);
-
-
     }
 }
 
-if (!function_exists('encrypt')) {
+if (! function_exists('encrypt')) {
     /**
      * Encrypt the given value.
      *
@@ -247,7 +237,7 @@ if (!function_exists('encrypt')) {
     }
 }
 
-if (!function_exists('decrypt')) {
+if (! function_exists('decrypt')) {
     /**
      * Decrypt the given value.
      *
@@ -260,22 +250,20 @@ if (!function_exists('decrypt')) {
     }
 }
 
-if (!function_exists('response')) {
+if (! function_exists('response')) {
     /**
      * Return a new response from the application.
-     * @param $server
-     * @param $status
-     * @param array $headers
-     * @param array|null $protocolData
-     * @return mixed|Hyperf\HttpServer\Response|null
+     * @param mixed $server
+     * @param mixed $status
+     * @return null|mixed|Response
      */
     function response($server = 'http_response', $status = Constant::CODE_SUCCESS, array $headers = [], ?array $protocolData = [])
     {
-//        $response = app($server)->withStatus($status);
-//
-//        foreach ($headers as $name => $value) {
-//            $response = $response->withHeader($name, $value);
-//        }
+        //        $response = app($server)->withStatus($status);
+        //
+        //        foreach ($headers as $name => $value) {
+        //            $response = $response->withHeader($name, $value);
+        //        }
 
         $response = Context::get(ResponseInterface::class);
         if ($headers) {
@@ -301,20 +289,18 @@ if (!function_exists('response')) {
     }
 }
 
-if (!function_exists('getConfig')) {
+if (! function_exists('getConfig')) {
     /**
      * Return a ConfigInterface.
-     *
-     * @return ConfigInterface
      */
     function getConfig(): ConfigInterface
     {
-        //通过应用容器 获取配置类对象
+        // 通过应用容器 获取配置类对象
         return getConfigInterface();
     }
 }
 
-if (!function_exists('isValidIp')) {
+if (! function_exists('isValidIp')) {
     /**
      * Checks if the ip is valid.
      *
@@ -324,7 +310,7 @@ if (!function_exists('isValidIp')) {
      */
     function isValidIp($ip = null)
     {
-        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) && !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE)
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) && ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE)
         ) {
             return false;
         }
@@ -333,26 +319,24 @@ if (!function_exists('isValidIp')) {
     }
 }
 
-if (!function_exists('getClientIP')) {
-
+if (! function_exists('getClientIP')) {
     /**
      * Get the client IP address.
-     * @param $ip
-     * @param $request
+     * @param null|mixed $ip
+     * @param null|mixed $request
      * @return mixed|string
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     function getClientIP($ip = null, $request = null)
     {
-        if (!empty($ip)) {
+        if (! empty($ip)) {
             return $ip;
         }
 
         $ipContextKey = 'request.clientIpData';
 
-        if (!Context::has($ipContextKey)) {
-
+        if (! Context::has($ipContextKey)) {
             $remotesKeys = [
                 'HTTP_X_FORWARDED_FOR',
                 'HTTP_CLIENT_IP',
@@ -385,7 +369,7 @@ if (!function_exists('getClientIP')) {
             }
 
             $requestHeaders = $request->getHeaders();
-            //var_dump(__METHOD__, $requestHeaders);
+            // var_dump(__METHOD__, $requestHeaders);
             foreach ($remotesKeys as $key) {
                 $address = data_get($requestHeaders, [strtolower($key)]);
                 if (empty($address)) {
@@ -422,7 +406,7 @@ if (!function_exists('getClientIP')) {
             }
 
             try {
-                //获取rpc请求方式的客户端ip
+                // 获取rpc请求方式的客户端ip
                 $server = ApplicationContext::getContainer()->get(Server::class);
                 if (empty($server)) {
                     Context::set($ipContextKey, $clientIp);
@@ -442,7 +426,7 @@ if (!function_exists('getClientIP')) {
                     Context::set($ipContextKey, $clientIp);
                     return $clientIp;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
             }
 
             Context::set($ipContextKey, $clientIp);
@@ -450,11 +434,10 @@ if (!function_exists('getClientIP')) {
         }
 
         return Context::get($ipContextKey);
-
     }
 }
 
-if (!function_exists('getTranslator')) {
+if (! function_exists('getTranslator')) {
     /**
      * Return a Translator object.
      *
@@ -462,12 +445,12 @@ if (!function_exists('getTranslator')) {
      */
     function getTranslator()
     {
-        //通过应用容器 获取配置类对象
+        // 通过应用容器 获取配置类对象
         return getApplicationContainer()->get(TranslatorInterface::class);
     }
 }
 
-if (!function_exists('getValidatorFactory')) {
+if (! function_exists('getValidatorFactory')) {
     /**
      * Return a config object.
      *
@@ -475,30 +458,26 @@ if (!function_exists('getValidatorFactory')) {
      */
     function getValidatorFactory()
     {
-        //通过应用容器 获取配置类对象
+        // 通过应用容器 获取配置类对象
         return app(ValidatorFactoryInterface::class);
     }
 }
 
-if (!function_exists('randomStr')) {
+if (! function_exists('randomStr')) {
     /**
-     * 随机数生成
+     * 随机数生成.
      * @param int $length
      * @return string
-     * @author Jmiy
      */
     function randomStr($length = 6)
     {
-
-        $random = Str::random($length);
-
-        return $random;
+        return Str::random($length);
     }
 }
 
-if (!function_exists('getWhetherData')) {
+if (! function_exists('getWhetherData')) {
     /**
-     * 是否转化
+     * 是否转化.
      * @param string $whether
      * @return string
      */
@@ -514,9 +493,9 @@ if (!function_exists('getWhetherData')) {
     }
 }
 
-if (!function_exists('time2string')) {
+if (! function_exists('time2string')) {
     /**
-     * 获取展示时间
+     * 获取展示时间.
      * @param int $second 秒
      * @return string
      */
@@ -532,15 +511,14 @@ if (!function_exists('time2string')) {
     }
 }
 
-if (!function_exists('handleAccount')) {
+if (! function_exists('handleAccount')) {
     /**
-     * 账号脱敏规则： 前面取三个字母，后面2个字母，中间全部隐藏，域名显示  muc***az@outlook.com   不够隐藏的就从第四个字母开始隐藏，域名都显示出来   所有品牌统一用这个规则
+     * 账号脱敏规则： 前面取三个字母，后面2个字母，中间全部隐藏，域名显示  muc***az@outlook.com   不够隐藏的就从第四个字母开始隐藏，域名都显示出来   所有品牌统一用这个规则.
      * @param string $account
      * @return string
      */
     function handleAccount($account = '')
     {
-
         if (empty($account)) {
             return $account;
         }
@@ -551,7 +529,7 @@ if (!function_exists('handleAccount')) {
 
         $start = $start !== false ? $start : 0;
 
-        for ($i = 2; $i >= 0; $i--) {
+        for ($i = 2; $i >= 0; --$i) {
             if ($start - $i >= 0) {
                 $start = $start - $i;
                 break;
@@ -562,14 +540,14 @@ if (!function_exists('handleAccount')) {
     }
 }
 
-if (!function_exists('getTimeAt')) {
+if (! function_exists('getTimeAt')) {
     /**
-     * 时间转化
+     * 时间转化.
+     * @param mixed $time
      * @return array
      */
     function getTimeAt($time)
     {
-
         if ($time === null) {
             return $time;
         }
@@ -583,17 +561,17 @@ if (!function_exists('getTimeAt')) {
     }
 }
 
-if (!function_exists('handleDatetime')) {
+if (! function_exists('handleDatetime')) {
     /**
-     * 处理时间数据
+     * 处理时间数据.
      * @param mix $data
      * @param string $format 时间格式
      * @param string $timezone 时区
+     * @param null|mixed $attributes
      * @return mix 时间数据
      */
     function handleDatetime($data, $format = null, $attributes = null, $timezone = null)
     {
-
         $timeData = getTimeAt($data);
 
         $timeValue = strtotime($timeData);
@@ -601,7 +579,7 @@ if (!function_exists('handleDatetime')) {
             $timeData = $timeValue;
         }
 
-        if (!is_numeric($timeData)) {
+        if (! is_numeric($timeData)) {
             return $timeData;
         }
 
@@ -631,32 +609,31 @@ if (!function_exists('handleDatetime')) {
     }
 }
 
-if (!function_exists('handleNumber')) {
+if (! function_exists('handleNumber')) {
     /**
      * 处理数值
      * @param mix $value 要处理的数值
      * @param array $dateFormat 数据格式
      * @return mix 数值
      */
-    function handleNumber($value, $dateFormat = [2, ".", ''])
+    function handleNumber($value, $dateFormat = [2, '.', ''])
     {
-        $dateFormat = $dateFormat ? $dateFormat : [2, ".", ''];
+        $dateFormat = $dateFormat ? $dateFormat : [2, '.', ''];
         return number_format(floatval($value), ...$dateFormat);
     }
 }
 
-if (!function_exists('handleCollect')) {
+if (! function_exists('handleCollect')) {
     /**
-     * 处理集合数据
+     * 处理集合数据.
      * @param array|collect $data 待处理的数据
-     * @param string|array $type 类型
+     * @param array|string $type 类型
      * @param string $keyField key
      * @param string $valueField value
      * @return collect 集合数据
      */
     function handleCollect($data, $type = null, $keyField = null, $valueField = null)
     {
-
         $data = \Hyperf\Collection\collect($data);
 
         if ($keyField) {
@@ -669,7 +646,7 @@ if (!function_exists('handleCollect')) {
 
         $data = $data->pluck($valueField, $keyField);
 
-        if (!is_array($type)) {
+        if (! is_array($type)) {
             return $data;
         }
 
@@ -679,7 +656,7 @@ if (!function_exists('handleCollect')) {
             foreach ($data as $key => $value) {
                 if (Arr::accessible($value) || is_object($value)) {
                     if ($keyField && strpos(data_get($value, $keyField, ''), $typeValue) !== false) {
-                        $keyData = explode(($typeValue . '_'), $key, 2);
+                        $keyData = explode($typeValue . '_', $key, 2);
                         $_key = $typeValue . '.' . data_get($keyData, 1, 0);
                         data_set($_data, $_key, $value);
                         unset($data[$key]);
@@ -695,17 +672,17 @@ if (!function_exists('handleCollect')) {
                     $haystack = $key;
                     if ($keyField) {
                         $haystack = $key;
-                    } else if ($valueField) {
+                    } elseif ($valueField) {
                         $haystack = $value;
                     }
                     if (strpos($haystack, $typeValue) !== false) {
-                        $keyData = explode(($typeValue . '_'), $haystack, 2);
-                        $valueData = explode(($typeValue . '_'), $value, 2);
+                        $keyData = explode($typeValue . '_', $haystack, 2);
+                        $valueData = explode($typeValue . '_', $value, 2);
 
                         if ($keyField) {
                             $_key = $typeValue . '.' . data_get($keyData, 1, 0);
                             data_set($_data, $_key, data_get($valueData, 1, 0));
-                        } else if ($valueField) {
+                        } elseif ($valueField) {
                             $currentKey = data_get($_keyData, $typeValue, 0);
                             $_key = $typeValue . '.' . $currentKey;
                             data_set($_data, $_key, data_get($valueData, 1, 0));
@@ -717,23 +694,21 @@ if (!function_exists('handleCollect')) {
             }
         }
         $data = \Hyperf\Collection\collect($_data);
-        unset($_data);
-        unset($_keyData);
+        unset($_data, $_keyData);
 
         return $data;
     }
 }
 
-if (!function_exists('getCountry')) {
+if (! function_exists('getCountry')) {
     /**
-     * 获取用户国家
+     * 获取用户国家.
      * @param string $ip
      * @param string $country
      * @return string
      */
     function getCountry($ip = '', $country = '')
     {
-
         if ($country) {
             return $country;
         }
@@ -745,69 +720,68 @@ if (!function_exists('getCountry')) {
         $geoipData = geoip()->setConfig($key, \Hyperf\Config\config('geoip.service'))->getLocation($ip)->toArray();
         $country = data_get($geoipData, 'iso_code', '');
         if (empty($country)) {
-
-//            $exceptionName = '通过api获取ip国家失败：';
-//            $messageData = ['ip:' . $ip, ' ip是否有效：' . ($ipIsValid ? '是' : '否')];
-//            $message = implode(',', $messageData);
-//            $parameters = [$exceptionName, $message, ''];
-//            MonitorServiceManager::handle('Ali', 'Ding', 'report', $parameters);
+            //            $exceptionName = '通过api获取ip国家失败：';
+            //            $messageData = ['ip:' . $ip, ' ip是否有效：' . ($ipIsValid ? '是' : '否')];
+            //            $message = implode(',', $messageData);
+            //            $parameters = [$exceptionName, $message, ''];
+            //            MonitorServiceManager::handle('Ali', 'Ding', 'report', $parameters);
 
             $value = 'maxmind_database';
             $geoipData = geoip()->setConfig($key, $value)->getLocation($ip)->toArray();
             $country = data_get($geoipData, 'iso_code', '');
 
-//            if (empty($country)) {
-//                $exceptionName = '通过maxmind_database获取ip国家失败：';
-//                $parameters = [$exceptionName, $message, ''];
-//                MonitorServiceManager::handle('Ali', 'Ding', 'report', $parameters);
-//            }
+            //            if (empty($country)) {
+            //                $exceptionName = '通过maxmind_database获取ip国家失败：';
+            //                $parameters = [$exceptionName, $message, ''];
+            //                MonitorServiceManager::handle('Ali', 'Ding', 'report', $parameters);
+            //            }
         }
 
-//        if (empty($country)) {//记录日志
-//
-//            $key = implode(':', ['log',__FUNCTION__, $ip]);
-//            $ttl = BaseService::getTtl();
-//            $handleCacheData = getJobData(BaseService::getNamespaceClass(), 'remember', [$key, $ttl, function () use($ip, $ipIsValid) {
-//                $level = 'info';
-//                $type = 'ip';
-//                $subtype = 'country';
-//                $keyinfo = $ip;
-//                $content = [];
-//                $subkeyinfo = $ipIsValid ? 1 : 0;
-//                $extData = [];
-//                $dataKey = null;
-//                return BaseService::logs($level, $type, $subtype, $keyinfo, $content, $subkeyinfo, $extData, $dataKey);
-//            }]);
-//            BaseService::handleCache(BaseService::getCacheTags(), $handleCacheData);
-//        }
+        //        if (empty($country)) {//记录日志
+        //
+        //            $key = implode(':', ['log',__FUNCTION__, $ip]);
+        //            $ttl = BaseService::getTtl();
+        //            $handleCacheData = getJobData(BaseService::getNamespaceClass(), 'remember', [$key, $ttl, function () use($ip, $ipIsValid) {
+        //                $level = 'info';
+        //                $type = 'ip';
+        //                $subtype = 'country';
+        //                $keyinfo = $ip;
+        //                $content = [];
+        //                $subkeyinfo = $ipIsValid ? 1 : 0;
+        //                $extData = [];
+        //                $dataKey = null;
+        //                return BaseService::logs($level, $type, $subtype, $keyinfo, $content, $subkeyinfo, $extData, $dataKey);
+        //            }]);
+        //            BaseService::handleCache(BaseService::getCacheTags(), $handleCacheData);
+        //        }
 
         return $country ? $country : ($ipIsValid ? 'US' : '');
     }
 }
 
-if (!function_exists('setAppTimezone')) {
+if (! function_exists('setAppTimezone')) {
     /**
-     * 设置时区
-     * @param $appType
+     * 设置时区.
      * @param string $timezone
      * @param string $dbTimezone
      * @param null $appEnv
+     * @param mixed $appType
      * @return bool
      */
     function setAppTimezone($appType, $timezone = '', $dbTimezone = '', $appEnv = null)
     {
         if ($timezone) {
-            date_default_timezone_set($timezone); //设置app时区 https://www.php.net/manual/en/timezones.php
+            date_default_timezone_set($timezone); // 设置app时区 https://www.php.net/manual/en/timezones.php
         }
 
         return true;
     }
 }
 
-if (!function_exists('setLocale')) {
+if (! function_exists('setLocale')) {
     /**
      * 设置国家语言
-     * @param $country
+     * @param mixed $country
      */
     function setLocale($country)
     {
@@ -815,10 +789,29 @@ if (!function_exists('setLocale')) {
     }
 }
 
-if (!function_exists('getExePlan')) {
+if (! function_exists('getExePlan')) {
     /**
-     * 获取SQL执行计划
-     * @param mix $star 星级
+     * 获取SQL执行计划.
+     * @param mixed $connection
+     * @param null|mixed $table
+     * @param mixed $make
+     * @param mixed $from
+     * @param mixed $select
+     * @param mixed $where
+     * @param mixed $order
+     * @param null|mixed $limit
+     * @param null|mixed $offset
+     * @param mixed $isPage
+     * @param mixed $pagination
+     * @param mixed $isOnlyGetCount
+     * @param mixed $joinData
+     * @param mixed $with
+     * @param mixed $handleData
+     * @param mixed $unset
+     * @param mixed $relation
+     * @param mixed $setConnection
+     * @param mixed $default
+     * @param mixed $groupBy
      * @return float $star 星级
      */
     function getExePlan(
@@ -842,8 +835,7 @@ if (!function_exists('getExePlan')) {
         $setConnection = true,
         $default = Constant::PARAMETER_ARRAY_DEFAULT,
         $groupBy = Constant::PARAMETER_ARRAY_DEFAULT
-    )
-    {
+    ) {
         return [
             Constant::DB_EXECUTION_PLAN_SETCONNECTION => $setConnection,
             Constant::CONNECTION => $connection,
@@ -869,13 +861,13 @@ if (!function_exists('getExePlan')) {
     }
 }
 
-if (!function_exists('getExePlanJoinData')) {
+if (! function_exists('getExePlanJoinData')) {
     /**
-     * 获取SQL执行计划 表关联
+     * 获取SQL执行计划 表关联.
      * @param string $table 表
-     * @param string|function $first
-     * @param string|null $operator
-     * @param string|null $second
+     * @param function|string $first
+     * @param null|string $operator
+     * @param null|string $second
      * @param string $type
      * @return array SQL执行计划 表关联
      */
@@ -891,9 +883,9 @@ if (!function_exists('getExePlanJoinData')) {
     }
 }
 
-if (!function_exists('getExePlanHandleData')) {
+if (! function_exists('getExePlanHandleData')) {
     /**
-     * 获取SQL执行计划 数据处理结构数据
+     * 获取SQL执行计划 数据处理结构数据.
      * @param string $field 字段名
      * @param mix $default 默认值
      * @param array $data 数据映射map
@@ -901,7 +893,7 @@ if (!function_exists('getExePlanHandleData')) {
      * @param string $dateFormat 数据格式
      * @param string $time 时间处理句柄
      * @param string $glue 分隔符或者连接符
-     * @param boolean $isAllowEmpty 是否允许为空 true：是  false：否
+     * @param bool $isAllowEmpty 是否允许为空 true：是  false：否
      * @param array $callback 回调闭包数组
      * @param array $only 返回字段
      * @return array 数据处理结构数据
@@ -909,34 +901,33 @@ if (!function_exists('getExePlanHandleData')) {
     function getExePlanHandleData($field = null, $default = Constant::PARAMETER_STRING_DEFAULT, $data = Constant::PARAMETER_ARRAY_DEFAULT, $dataType = Constant::PARAMETER_STRING_DEFAULT, $dateFormat = Constant::PARAMETER_STRING_DEFAULT, $time = Constant::PARAMETER_STRING_DEFAULT, $glue = Constant::PARAMETER_STRING_DEFAULT, $isAllowEmpty = true, $callback = Constant::PARAMETER_ARRAY_DEFAULT, $only = Constant::PARAMETER_ARRAY_DEFAULT)
     {
         return [
-            Constant::DB_EXECUTION_PLAN_FIELD => $field, //数据字段
-            Constant::DATA => $data, //数据映射map
-            Constant::DB_EXECUTION_PLAN_DATATYPE => $dataType, //数据类型
-            Constant::DB_EXECUTION_PLAN_DATA_FORMAT => $dateFormat, //数据格式
-            Constant::DB_EXECUTION_PLAN_TIME => $time, //时间处理句柄
-            Constant::DB_EXECUTION_PLAN_GLUE => $glue, //分隔符或者连接符
-            Constant::DB_EXECUTION_PLAN_IS_ALLOW_EMPTY => $isAllowEmpty, //是否允许为空 true：是  false：否
-            Constant::DB_EXECUTION_PLAN_DEFAULT => $default, //默认值$default
+            Constant::DB_EXECUTION_PLAN_FIELD => $field, // 数据字段
+            Constant::DATA => $data, // 数据映射map
+            Constant::DB_EXECUTION_PLAN_DATATYPE => $dataType, // 数据类型
+            Constant::DB_EXECUTION_PLAN_DATA_FORMAT => $dateFormat, // 数据格式
+            Constant::DB_EXECUTION_PLAN_TIME => $time, // 时间处理句柄
+            Constant::DB_EXECUTION_PLAN_GLUE => $glue, // 分隔符或者连接符
+            Constant::DB_EXECUTION_PLAN_IS_ALLOW_EMPTY => $isAllowEmpty, // 是否允许为空 true：是  false：否
+            Constant::DB_EXECUTION_PLAN_DEFAULT => $default, // 默认值$default
             Constant::DB_EXECUTION_PLAN_CALLBACK => $callback,
             Constant::DB_EXECUTION_PLAN_ONLY => $only,
         ];
     }
 }
 
-if (!function_exists('handleTime')) {
+if (! function_exists('handleTime')) {
     /**
-     * 处理时间
-     * @param string|max $dataTime 时间数据
+     * 处理时间.
+     * @param max|string $dataTime 时间数据
      * @param string $time
      * @param string $dateFormat 时间格式 默认：Y-m-d H:i:s
      * @return string 时间
      */
     function handleTime($dataTime, $time = '', $dateFormat = 'Y-m-d H:i:s')
     {
-
         $timeValue = strtotime($dataTime);
 
-        if (!($timeValue !== false && $dataTime != '0000-00-00 00:00:00')) {
+        if (! ($timeValue !== false && $dataTime != '0000-00-00 00:00:00')) {
             return $dataTime;
         }
 
@@ -955,40 +946,39 @@ if (!function_exists('handleTime')) {
     }
 }
 
-if (!function_exists('handleData')) {
+if (! function_exists('handleData')) {
     /**
-     * 处理数据
+     * 处理数据.
      * @param array|obj $value
-     * @param string|array $field [
-     * 'field' => 'interests.*.interest',//数据字段
-     * Constant::DATA => [],//数据映射map
-     * 'dataType' => 'string',//数据类型
-     * 'dateFormat' => 'Y-m-d H:i:s',//数据格式
-     * 'time' => '+1year',//时间处理句柄
-     * 'glue' => ',',//分隔符或者连接符
-     * 'is_allow_empty' => true,//是否允许为空 true：是  false：否
-     * 'default' => '',//默认值$default
-     * 'only' => [],
-     * 'callback' => [
-     * "amount" => function($item) {
-     * return data_get($item, 'item_price_amount', 0) - data_get($item, 'promotion_discount_amount', 0);
-     * },
-     * ],
-     * ]
-     * @return string|array
+     * @param array|string $field [
+     *                            'field' => 'interests.*.interest',//数据字段
+     *                            Constant::DATA => [],//数据映射map
+     *                            'dataType' => 'string',//数据类型
+     *                            'dateFormat' => 'Y-m-d H:i:s',//数据格式
+     *                            'time' => '+1year',//时间处理句柄
+     *                            'glue' => ',',//分隔符或者连接符
+     *                            'is_allow_empty' => true,//是否允许为空 true：是  false：否
+     *                            'default' => '',//默认值$default
+     *                            'only' => [],
+     *                            'callback' => [
+     *                            "amount" => function($item) {
+     *                            return data_get($item, 'item_price_amount', 0) - data_get($item, 'promotion_discount_amount', 0);
+     *                            },
+     *                            ],
+     *                            ]
+     * @return array|string
      */
     function handleData($value, $field)
     {
-
-        $fieldData = []; //数据映射map
-        $dataType = ''; //数据类型
-        $glue = ','; //分隔符或者连接符
-        $default = ''; //默认值$default
-        $dateFormat = 'Y-m-d H:i:s'; //数据格式
-        $time = ''; //时间处理句柄
-        $isAllowEmpty = true; //是否允许为空 true：是  false：否
-        $only = []; //只要 only 里面的字段
-        $callback = null; //回调
+        $fieldData = []; // 数据映射map
+        $dataType = ''; // 数据类型
+        $glue = ','; // 分隔符或者连接符
+        $default = ''; // 默认值$default
+        $dateFormat = 'Y-m-d H:i:s'; // 数据格式
+        $time = ''; // 时间处理句柄
+        $isAllowEmpty = true; // 是否允许为空 true：是  false：否
+        $only = []; // 只要 only 里面的字段
+        $callback = null; // 回调
         $srcFiel = $field;
         if (is_array($field)) {
             $fieldData = data_get($field, Constant::DATA, []);
@@ -998,8 +988,8 @@ if (!function_exists('handleData')) {
             $default = data_get($field, 'default', $default);
             $time = data_get($field, 'time', $time);
             $isAllowEmpty = data_get($field, 'is_allow_empty', $isAllowEmpty);
-            $only = data_get($field, 'only', $only); //只要 only 里面的字段
-            $callback = data_get($field, 'callback', $callback); //回调
+            $only = data_get($field, 'only', $only); // 只要 only 里面的字段
+            $callback = data_get($field, 'callback', $callback); // 回调
             $field = data_get($field, 'field', $field);
         }
 
@@ -1022,7 +1012,7 @@ if (!function_exists('handleData')) {
                 }
             }
             $value = $_value;
-        } else if (strpos($field, '{connection}') !== false) {
+        } elseif (strpos($field, '{connection}') !== false) {
             $_fieldData = explode('{connection}', $field);
             $_value = [];
             foreach ($_fieldData as $connectionField) {
@@ -1037,12 +1027,10 @@ if (!function_exists('handleData')) {
                 $_value[] = handleData($value, $_field);
             }
             $value = $_value;
-        } else if (strpos($field, '|') !== false) {
-
+        } elseif (strpos($field, '|') !== false) {
             $segments = explode('.', $field);
             $field = [];
             foreach ($segments as $segment) {
-
                 if (strpos($segment, '|') === false) {
                     $field[] = $segment;
                     continue;
@@ -1057,7 +1045,6 @@ if (!function_exists('handleData')) {
                 $_segments = explode('|', $segment);
                 $nextSegment = '';
                 foreach ($_segments as $_key => $_segment) {
-
                     if ($nextSegment == $_segment) {
                         continue;
                     }
@@ -1069,7 +1056,6 @@ if (!function_exists('handleData')) {
                             $value = Arr::accessible($value) ? $value : json_decode($value, true);
                             $value = Arr::accessible($value) ? $value : $default;
                             break;
-
                         default:
                             $value = data_get($value, $_segment, $default);
                             break;
@@ -1085,7 +1071,7 @@ if (!function_exists('handleData')) {
             $value = data_get($value, $field, $default);
         }
 
-        if (!$isAllowEmpty && empty($value)) {//如果不允许为空并且当前值为空，就使用默认值$default
+        if (! $isAllowEmpty && empty($value)) {// 如果不允许为空并且当前值为空，就使用默认值$default
             $value = $default;
         }
 
@@ -1096,14 +1082,14 @@ if (!function_exists('handleData')) {
 
         if ($callback) {
             foreach ($callback as $key => $func) {
-                if (Arr::accessible($value) && !Arr::isAssoc($value)) {//如果是 索引数组，就进行递归处理
+                if (Arr::accessible($value) && ! Arr::isAssoc($value)) {// 如果是 索引数组，就进行递归处理
                     foreach ($value as $_key => $item) {
                         if (Arr::isAssoc($item)) {
                             data_set($value, $_key, handleData($item, $srcFiel));
                         }
                     }
                 } else {
-                    if (false === strpos($key, '{nokey}')) {
+                    if (strpos($key, '{nokey}') === false) {
                         data_set($value, $key, $func($value));
                     } else {
                         $func($value);
@@ -1113,7 +1099,7 @@ if (!function_exists('handleData')) {
         }
 
         if ($only) {
-            if (Arr::accessible($value) && !Arr::isAssoc($value)) {
+            if (Arr::accessible($value) && ! Arr::isAssoc($value)) {
                 foreach ($value as $key => $item) {
                     $srcFiel['field'] = null;
                     data_set($value, $key, handleData($item, $srcFiel));
@@ -1123,19 +1109,17 @@ if (!function_exists('handleData')) {
             }
         }
 
-
-//        var_dump($fieldData);
-//        var_dump($value);
-//        exit;
-//        if (strpos($field, '{or}') !== false) {
-//            dd($field, $value);
-//        }
+        //        var_dump($fieldData);
+        //        var_dump($value);
+        //        exit;
+        //        if (strpos($field, '{or}') !== false) {
+        //            dd($field, $value);
+        //        }
 
         switch ($dataType) {
             case 'string':
                 if (Arr::accessible($value)) {
-
-                    if (!is_array($value)) {
+                    if (! is_array($value)) {
                         $value = $value->toArray();
                     }
 
@@ -1147,29 +1131,23 @@ if (!function_exists('handleData')) {
                 $value = $value . '';
 
                 break;
-
             case 'array':
                 $value = is_array($value) ? $value : explode($glue, $value);
                 $value = array_filter(array_unique($value));
                 break;
-
             case 'datetime':
-
                 $value = handleTime($value, $time, $dateFormat);
                 if ($value === '0000-00-00 00:00:00') {
                     $value = '';
                 }
                 break;
-
             case 'int':
                 $value = intval($value);
                 break;
-
             case 'price':
-                $dateFormat = $dateFormat ? $dateFormat : [2, ".", ''];
+                $dateFormat = $dateFormat ? $dateFormat : [2, '.', ''];
                 $value = number_format(floatval($value), ...$dateFormat);
                 break;
-
             default:
                 break;
         }
@@ -1178,19 +1156,18 @@ if (!function_exists('handleData')) {
     }
 }
 
-if (!function_exists('handleResponseData')) {
+if (! function_exists('handleResponseData')) {
     /**
-     * 处理响应数据
-     * @param \Hypert\Database\Model\Collection $data obj $data 数据句柄
+     * 处理响应数据.
+     * @param Collection $data obj $data 数据句柄
      * @param array $dbExecutionPlan sql执行计划
-     * @param boolean $flatten 是否将数据平铺  true：是  false：否
-     * @param boolean $isGetQuery 是否获取查询句柄Query true：是  false:否
+     * @param bool $flatten 是否将数据平铺  true：是  false：否
+     * @param bool $isGetQuery 是否获取查询句柄Query true：是  false:否
      * @param string $dataStructure 数据结构
-     * @return array  响应数据
+     * @return array 响应数据
      */
     function handleResponseData($data = null, &$dbExecutionPlan = [], $flatten = false, $isGetQuery = false, $dataStructure = 'one')
     {
-
         if ($data->isEmpty()) {
             return [];
         }
@@ -1199,7 +1176,7 @@ if (!function_exists('handleResponseData')) {
 
         $parentData = data_get($dbExecutionPlan, Constant::DB_EXECUTION_PLAN_PARENT, []);
         $with = data_get($dbExecutionPlan, 'with', []);
-        $itemHandleData = data_get($dbExecutionPlan, Constant::DB_EXECUTION_PLAN_ITEM_HANDLE_DATA, []); //数据行整体处理
+        $itemHandleData = data_get($dbExecutionPlan, Constant::DB_EXECUTION_PLAN_ITEM_HANDLE_DATA, []); // 数据行整体处理
         foreach ($allData as $index => $data) {
             $forgetKeys = [];
 
@@ -1216,23 +1193,21 @@ if (!function_exists('handleResponseData')) {
             }
 
             foreach ($with as $relationKey => $relationData) {
-
                 $relation = data_get($relationData, 'relation', '');
                 $relationDbDefaultData = data_get($relationData, 'default', []);
 
                 $relationDbData = data_get($data, $relationKey, []);
                 $handleData = data_get($relationData, 'handleData', []);
-                if (empty($relationDbData) && $relation == 'hasOne') {//如果关系数据为空，就设置默认值
+                if (empty($relationDbData) && $relation == 'hasOne') {// 如果关系数据为空，就设置默认值
                     $select = data_get($with, $relationKey . '.select', []);
                     foreach ($select as $key) {
-
                         if (stripos($key, ' as ') !== false) {
                             $segments = preg_split('/\s+as\s+/i', $key);
                             $key = end($segments) ? end($segments) : $key;
                         }
 
                         $arrIndex = $relationKey . '.' . $key;
-                        data_set($data, $arrIndex, data_get($data, data_get($relationDbDefaultData, $key, ''), (isset($handleData[$arrIndex]['default']) ? $handleData[$arrIndex]['default'] : '')));
+                        data_set($data, $arrIndex, data_get($data, data_get($relationDbDefaultData, $key, ''), isset($handleData[$arrIndex]['default']) ? $handleData[$arrIndex]['default'] : ''));
                     }
                 }
 
@@ -1276,7 +1251,6 @@ if (!function_exists('handleResponseData')) {
             case 'one':
                 $data = Arr::first($allData);
                 break;
-
             default:
                 $data = $allData;
                 break;
@@ -1286,9 +1260,11 @@ if (!function_exists('handleResponseData')) {
     }
 }
 
-if (!function_exists('handleRelation')) {
+if (! function_exists('handleRelation')) {
     /**
-     * 获取响应数据
+     * 获取响应数据.
+     * @param null|mixed $data
+     * @param mixed $dbExecutionPlan
      * @return mix 当前路由uri
      */
     function handleRelation($data = null, &$dbExecutionPlan = [])
@@ -1299,12 +1275,11 @@ if (!function_exists('handleRelation')) {
         }
 
         foreach ($with as $relationKey => $relationData) {
-            $data = $data->with([$relationKey => function ($relation) use ($relationData, $relationKey, &$dbExecutionPlan) {
-
+            $data = $data->with([$relationKey => function ($relation) use ($relationData, &$dbExecutionPlan) {
                 $setConnection = data_get($relationData, 'setConnection', false);
                 $storeId = data_get($relationData, 'storeId', 0);
                 if ($setConnection) {
-                    BaseService::createModel($storeId, null, [], '', $relation); //设置关联对象relation 数据库连接
+                    BaseService::createModel($storeId, null, [], '', $relation); // 设置关联对象relation 数据库连接
                 }
 
                 $morphToConnection = data_get($relationData, 'morphToConnection', []);
@@ -1345,32 +1320,31 @@ if (!function_exists('handleRelation')) {
                 }
 
                 handleRelation($relation, $relationData);
-            }
+            },
             ]);
         }
         return $data;
     }
 }
 
-if (!function_exists('handleQuery')) {
+if (! function_exists('handleQuery')) {
     /**
-     * 获取响应数据
+     * 获取响应数据.
      * @param obj $builder 数据库操作句柄
      * @param array $dbExecutionPlan sql执行计划
-     * @param boolean $flatten 是否将数据平铺  true：是  false：否
-     * @param boolean $isGetQuery 是否获取查询句柄Query true：是  false:否
+     * @param bool $flatten 是否将数据平铺  true：是  false：否
+     * @param bool $isGetQuery 是否获取查询句柄Query true：是  false:否
      * @param string $dataStructure 数据结构
-     * @return obj|array  响应数据
+     * @return array|obj 响应数据
      */
     function handleQuery($builder = null, &$dbExecutionPlan = [], $flatten = false, $isGetQuery = false, $dataStructure = 'one')
     {
-
         $parentData = data_get($dbExecutionPlan, Constant::DB_EXECUTION_PLAN_PARENT, []);
 
         $countBuilder = null;
-        $isPage = data_get($parentData, 'isPage', false); //是否获取分页
-        $isOnlyGetCount = data_get($parentData, 'isOnlyGetCount', false); //是否只要分页数据
-        $pagination = data_get($parentData, Constant::DB_EXECUTION_PLAN_PAGINATION, []); //分页数据
+        $isPage = data_get($parentData, 'isPage', false); // 是否获取分页
+        $isOnlyGetCount = data_get($parentData, 'isOnlyGetCount', false); // 是否只要分页数据
+        $pagination = data_get($parentData, Constant::DB_EXECUTION_PLAN_PAGINATION, []); // 分页数据
         if (empty($builder)) {
             if (empty($parentData)) {
                 return $builder;
@@ -1387,7 +1361,7 @@ if (!function_exists('handleQuery')) {
                 $parameters = data_get($parentData, Constant::PARAMETERS, []);
                 $table = data_get($parentData, Constant::DB_EXECUTION_PLAN_TABLE);
 
-                if (false !== strpos($make, '\\App\\Service\\')) {
+                if (strpos($make, '\App\Service\\') !== false) {
                     $builder = $make::getModel($connection, $table, $parameters);
                 } else {
                     $builder = BaseService::createModel($connection, $make, $parameters, $table);
@@ -1397,7 +1371,6 @@ if (!function_exists('handleQuery')) {
                 if ($from) {
                     $builder = $builder->from($from);
                 }
-
 
                 $joinData = data_get($parentData, Constant::DB_EXECUTION_PLAN_JOIN_DATA);
                 if ($joinData) {
@@ -1435,14 +1408,13 @@ if (!function_exists('handleQuery')) {
                 if ($orders) {
                     $orders = is_array($orders) ? $orders : [$orders];
                     foreach ($orders as $order) {
-
                         if (empty($order)) {
                             continue;
                         }
 
                         if (is_string($order)) {
                             $builder = $builder->orderByRaw($order);
-                        } else if (is_array($order)) {
+                        } elseif (is_array($order)) {
                             $column = data_get($order, 0, '');
                             $direction = data_get($order, 1, 'asc');
                             if ($column) {
@@ -1465,7 +1437,7 @@ if (!function_exists('handleQuery')) {
         }
 
         $count = true;
-        if (!$isGetQuery && $countBuilder && ($isPage || $isOnlyGetCount)) {
+        if (! $isGetQuery && $countBuilder && ($isPage || $isOnlyGetCount)) {
             $limit = data_get($pagination, Constant::PAGE_SIZE, 10);
             $count = $countBuilder->count();
             data_set($pagination, Constant::TOTAL, $count);
@@ -1490,13 +1462,13 @@ if (!function_exists('handleQuery')) {
 
         $data = handleResponseData($data, $dbExecutionPlan, $flatten, $isGetQuery, $dataStructure);
 
-        return $isPage ? [Constant::DATA => $data, Constant::DB_EXECUTION_PLAN_PAGINATION => $pagination,] : $data;
+        return $isPage ? [Constant::DATA => $data, Constant::DB_EXECUTION_PLAN_PAGINATION => $pagination] : $data;
     }
 }
 
-if (!function_exists('getDbBeforeHandle')) {
+if (! function_exists('getDbBeforeHandle')) {
     /**
-     * 获取数据库操作前要完成的 handle
+     * 获取数据库操作前要完成的 handle.
      * @param array $updateHandle
      * @param array $deleteHandle
      * @param array $insertHandle
@@ -1514,11 +1486,10 @@ if (!function_exists('getDbBeforeHandle')) {
     }
 }
 
-if (!function_exists('getUniqueId')) {
+if (! function_exists('getUniqueId')) {
     /**
-     * @return mixed
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     function getUniqueId(): mixed
     {
@@ -1527,7 +1498,6 @@ if (!function_exists('getUniqueId')) {
         try {
             return ApplicationContext::getContainer()->get(IdGeneratorInterface::class)->generate();
         } catch (Throwable $throwable) {
-
             if ($retry < 3) {
                 $retry = $retry + 1;
                 Coroutine::sleep(rand(1, 5));
@@ -1536,17 +1506,15 @@ if (!function_exists('getUniqueId')) {
 
             throw $throwable;
         }
-
     }
 }
 
-if (!function_exists('loger')) {
+if (! function_exists('loger')) {
     /**
      * @param string $name Channel 的名字
-     * @param string|null $group config/autoload/logger.php 配置文件中的log处理器 key 默认：default
-     * @return \Psr\Log\LoggerInterface
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @param null|string $group config/autoload/logger.php 配置文件中的log处理器 key 默认：default
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     function loger(string $name = 'app', ?string $group = 'default'): LoggerInterface
     {
@@ -1554,77 +1522,75 @@ if (!function_exists('loger')) {
     }
 }
 
-if (!function_exists('arrayTrim')) {
-    function arrayTrim(string|array $input): string|array
+if (! function_exists('arrayTrim')) {
+    function arrayTrim(array|string $input): array|string
     {
-        if (!is_array($input)) {
+        if (! is_array($input)) {
             return trim($input);
         }
         return array_map('arrayTrim', $input);
     }
 }
 
-if (!function_exists('removeUtf8Bom')) {
+if (! function_exists('removeUtf8Bom')) {
     function removeUtf8Bom(string $text): string
     {
         $bom = pack('H*', 'EFBBBF');
-        $text = preg_replace("/^$bom/", '', $text);
-        return $text;
+        return preg_replace("/^{$bom}/", '', $text);
     }
 }
 
-if (!function_exists('decodeSku')) {
+if (! function_exists('decodeSku')) {
     /**
-     * @param $sku
+     * @param mixed $sku
      * @return array
-     * sku解码
+     *               sku解码
      */
     function decodeSku($sku)
     {
         if (strpos($sku, 'UGT-') !== false) {
             $sku = str_replace('UGT-', 'AGT-', $sku);
         }
-        //如果匹配规则
+        // 如果匹配规则
         if (preg_match('/^([C|c][0-9]+)/i', $sku)) {
             preg_match('/^([C|c][0-9]+)/i', $sku, $match);
-            $available_sku = !empty($match[1]) ? $match[1] : '';
-            if (strtoupper(substr($available_sku, 0, 1)) == "C") {
+            $available_sku = ! empty($match[1]) ? $match[1] : '';
+            if (strtoupper(substr($available_sku, 0, 1)) == 'C') {
                 $sku_product_id = substr($available_sku, 1);
                 $sku_product_code = strtoupper(substr($available_sku, 0, 1));
             }
-        } else if (
+        } elseif (
             preg_match('/^[U|u]?(\d{6,7})$/i', $sku)
             || preg_match('/^[U|u]?(\d{6,7})[^\d]+/i', $sku)
         ) {
             preg_match('/^[U|u]?(\d{6,7})/i', $sku, $match);
-            $products_unique_number = !empty($match[1]) ? $match[1] : '';
+            $products_unique_number = ! empty($match[1]) ? $match[1] : '';
             $sku_product_id = $products_unique_number;
-            $sku_product_code = "U";
-        } else if (preg_match('/^[A|a]?(\S{6,15})$/i', $sku)) {
+            $sku_product_code = 'U';
+        } elseif (preg_match('/^[A|a]?(\S{6,15})$/i', $sku)) {
             preg_match('/^[A|a]?(\S{6,15})$/i', $sku, $match);
-            $products_unique_number = !empty($match[1]) ? $match[1] : '';
+            $products_unique_number = ! empty($match[1]) ? $match[1] : '';
             $sku_product_id = $products_unique_number;
-            $sku_product_code = "A";
+            $sku_product_code = 'A';
         } else {
             $sku_product_id = 0;
             $sku_product_code = '';
         }
 
-        return array('sku' => $sku_product_id, 'code' => $sku_product_code);
+        return ['sku' => $sku_product_id, 'code' => $sku_product_code];
     }
-
 }
 
-if (!function_exists('getScheduleConf')) {
+if (! function_exists('getScheduleConf')) {
     /**
-     * 获取调度配置
-     * @param $second
-     * @param $lifecycle
+     * 获取调度配置.
      * @param null $sec
      * @param null $minute
      * @param null $hour
      * @param null $day
      * @param null $month
+     * @param mixed $second
+     * @param mixed $lifecycle
      * @return string
      */
     function getScheduleConf($second, $lifecycle, $sec = null, $minute = null, $hour = null, $day = null, $month = null)
@@ -1636,12 +1602,12 @@ if (!function_exists('getScheduleConf')) {
         $separator = '';
         $_separator = '/';
         $__separator = '-';
-        $_day = floor($second / (86400));
+        $_day = floor($second / 86400);
         if ($day === null) {
             $day = $_day > 0 ? ($_day < 10 ? ('0' . $_day) : $_day) : '*';
-        } else if (false !== stripos($day, $_separator)) {
+        } elseif (stripos($day, $_separator) !== false) {
             $separator = $_separator;
-        } else if (false !== stripos($day, $__separator)) {
+        } elseif (stripos($day, $__separator) !== false) {
             $separator = $__separator;
         }
         if ($separator) {
@@ -1657,13 +1623,13 @@ if (!function_exists('getScheduleConf')) {
         }
 
         $separator = '';
-        $second = abs($second % (86400));
+        $second = abs($second % 86400);
         $_start = floor($second / 3600);
         if ($hour === null) {
             $hour = $_start < 10 ? ('0' . $_start) : $_start;
-        } else if (false !== stripos($hour, $_separator)) {
+        } elseif (stripos($hour, $_separator) !== false) {
             $separator = $_separator;
-        } else if (false !== stripos($hour, $__separator)) {
+        } elseif (stripos($hour, $__separator) !== false) {
             $separator = $__separator;
         }
         if ($separator) {
@@ -1683,9 +1649,9 @@ if (!function_exists('getScheduleConf')) {
         $_start = floor($second / 60);
         if ($minute === null) {
             $minute = $_start < 10 ? ('0' . $_start) : $_start;
-        } else if (false !== stripos($minute, $_separator)) {
+        } elseif (stripos($minute, $_separator) !== false) {
             $separator = $_separator;
-        } else if (false !== stripos($minute, $__separator)) {
+        } elseif (stripos($minute, $__separator) !== false) {
             $separator = $__separator;
         }
         if ($separator) {
@@ -1704,9 +1670,9 @@ if (!function_exists('getScheduleConf')) {
         $_start = $second % 60;
         if ($sec === null) {
             $sec = $_start < 10 ? ('0' . $_start) : $_start;
-        } else if (false !== stripos($sec, $_separator)) {
+        } elseif (stripos($sec, $_separator) !== false) {
             $separator = $_separator;
-        } else if (false !== stripos($sec, $__separator)) {
+        } elseif (stripos($sec, $__separator) !== false) {
             $separator = $__separator;
         }
         if ($separator) {
@@ -1730,8 +1696,4 @@ if (!function_exists('getScheduleConf')) {
             $month
         );
     }
-
 }
-
-
-

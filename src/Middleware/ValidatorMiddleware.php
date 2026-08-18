@@ -1,22 +1,31 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Middleware;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\HttpServer\Contract\RequestInterface;
 use Business\Hyperf\Utils\PublicValidator;
+use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Router\Dispatched;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+use function Business\Hyperf\Utils\Collection\data_get;
+
 class ValidatorMiddleware implements MiddlewareInterface
 {
-
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-
         /**
          * "Hyperf\HttpServer\Router\Dispatched" => array:3 [▼
          * //                "status" => 1
@@ -40,7 +49,7 @@ class ValidatorMiddleware implements MiddlewareInterface
          * //                "params" => array:1 [▼
          * //                    "id" => "996"
          * //                ]
-         * //            ]
+         * //            ].
          */
         $routeInfo = $request->getAttribute(Dispatched::class);
         if (data_get($routeInfo, 'handler')) {
@@ -55,12 +64,11 @@ class ValidatorMiddleware implements MiddlewareInterface
             }
 
             $validator = PublicValidator::handle(getApplicationContainer()->get(RequestInterface::class)->all(), $rules, $messages, $type);
-            if ($validator !== true) {//如果验证没有通过就提示用户
+            if ($validator !== true) {// 如果验证没有通过就提示用户
                 return $validator;
             }
         }
 
         return $handler->handle($request);
     }
-
 }

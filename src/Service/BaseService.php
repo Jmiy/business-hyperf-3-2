@@ -12,33 +12,36 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Service;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Collection\Arr;
 use Business\Hyperf\Constants\Constant;
+use Business\Hyperf\Service\Traits\Aspect;
 use Business\Hyperf\Service\Traits\Base;
+use Business\Hyperf\Service\Traits\BaseClient;
+use Business\Hyperf\Service\Traits\BaseDb;
+use Business\Hyperf\Service\Traits\BaseFile;
 use Business\Hyperf\Service\Traits\ExistsFirst;
 use Business\Hyperf\Service\Traits\HandleCache;
-use Business\Hyperf\Service\Traits\BaseDb;
-use Business\Hyperf\Service\Traits\Aspect;
-use Business\Hyperf\Service\Traits\BaseClient;
-use Business\Hyperf\Service\Traits\BaseFile;
 use Business\Hyperf\Service\Traits\Queue;
 use Business\Hyperf\Utils\Response;
+use Hyperf\Collection\Arr;
+use Hyperf\Database\Model\Builder;
+
+use function Business\Hyperf\Utils\Collection\data_get;
 
 class BaseService
 {
-    use Base,
-        BaseDb,
-        ExistsFirst,
-        HandleCache,
-        Aspect,
-        BaseClient,
-        BaseFile,
-        Queue;
+    use Base;
+    use BaseDb;
+    use ExistsFirst;
+    use HandleCache;
+    use Aspect;
+    use BaseClient;
+    use BaseFile;
+    use Queue;
 
     /**
-     * 获取公共参数
-     * @param array $params 请求参数
+     * 获取公共参数.
+     * @param mixed $data
+     * @param mixed $order
      * @return array
      */
     public static function getPublicData($data, $order = [])
@@ -54,12 +57,12 @@ class BaseService
 
         $params[Constant::ORDER_BY] = $params[Constant::ORDER_BY] ?? '';
         if (
-            $params[Constant::ORDER_BY] &&
-            is_array($params[Constant::ORDER_BY]) &&
-            count($params[Constant::ORDER_BY]) == 2 &&
-            $params[Constant::ORDER_BY][0] &&
-            $params[Constant::ORDER_BY][1] &&
-            in_array($params[Constant::ORDER_BY][1], ['asc', 'desc'])
+            $params[Constant::ORDER_BY]
+            && is_array($params[Constant::ORDER_BY])
+            && count($params[Constant::ORDER_BY]) == 2
+            && $params[Constant::ORDER_BY][0]
+            && $params[Constant::ORDER_BY][1]
+            && in_array($params[Constant::ORDER_BY][1], ['asc', 'desc'])
         ) {
             $order[0] = $params[Constant::ORDER_BY][0];
             $order[1] = $params[Constant::ORDER_BY][1];
@@ -73,24 +76,22 @@ class BaseService
     }
 
     /**
-     * 获取数据列表
+     * 获取数据列表.
      * @param array $data
-     * @param boolean $toArray 是否转化为数组 true:是 false:否 默认:false
-     * @param boolean $isPage 是否分页 true:是 false:否 默认:true
+     * @param bool $toArray 是否转化为数组 true:是 false:否 默认:false
+     * @param bool $isPage 是否分页 true:是 false:否 默认:true
      * @param array $select
-     * @param boolean $isRaw 是否原始 select
-     * @param boolean $isGetQuery 是否获取 query
-     * @return array|\Hyperf\Database\Model\Builder
+     * @param bool $isRaw 是否原始 select
+     * @param bool $isGetQuery 是否获取 query
+     * @return array|Builder
      */
     public static function getList($data, $toArray = false, $isPage = true, $select = [], $isRaw = false, $isGetQuery = false)
     {
-
         $query = $data['query'];
         unset($data['query']);
 
         $data[Constant::DATA] = [];
         if (empty($query)) {
-
             if ($isGetQuery) {
                 return $query;
             }
@@ -127,8 +128,7 @@ class BaseService
 
     public static function getResponseData($requestFailedCode, $errorCode, $data)
     {
-
-        if ($data === false || $data === null) {//如果请求接口失败，就直接返回推送失败
+        if ($data === false || $data === null) {// 如果请求接口失败，就直接返回推送失败
             return Response::getDefaultResponseData($requestFailedCode);
         }
 

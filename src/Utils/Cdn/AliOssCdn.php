@@ -1,39 +1,41 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Cdn;
 
-use function Hyperf\Collection\data_set;
 use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Utils\Context;
-use Hyperf\Coroutine\Coroutine;
-use Hyperf\Coroutine\Exception\ParallelExecutionException;
-use Hyperf\HttpMessage\Upload\UploadedFile;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Filesystem\FilesystemFactory;
-use Hyperf\Stringable\Str;
-use League\Flysystem\Config;
-use League\Flysystem\Visibility;
+
 use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Coroutine\parallel;
+use function Hyperf\Collection\data_set;
 
 class AliOssCdn extends ResourcesCdn
 {
-
     /**
-     * 设置配置信息
+     * 设置配置信息.
      * @param int $storeId 商城id
      * @param array $configData 配置数据
      */
     public static function setConf($storeId = 1, $configData = [])
     {
-
         $key = static::getContextKey($storeId);
 
-        return Context::storeData($key, function () use ($storeId, $configData) {
-            //通过应用容器 获取配置类对象
+        return Context::storeData($key, function () use ($configData) {
+            // 通过应用容器 获取配置类对象
             $config = getConfig();
 
-            //获取 disk 名称
+            // 获取 disk 名称
             $diskName = 'oss';
             if (empty($diskName)) {
                 return [];
@@ -41,22 +43,22 @@ class AliOssCdn extends ResourcesCdn
 
             $configKey = 'file.storage.' . $diskName;
 
-            //设置配置
-            //获取默认配置
+            // 设置配置
+            // 获取默认配置
             $defaultDiskConf = $config->get('file.storage.oss');
             data_set($defaultDiskConf, 'diskName', $diskName);
-//            'oss' => [
-//                'driver' => \Hyperf\Filesystem\Adapter\AliyunOssAdapterFactory::class,
-//                'accessId' => env('OSS_ACCESS_ID'),
-//                'accessSecret' => env('OSS_ACCESS_SECRET'),
-//                'bucket' => env('OSS_BUCKET'),
-//                'endpoint' => env('OSS_ENDPOINT'),
-//                // 'timeout' => 3600,
-//                // 'connectTimeout' => 10,
-//                // 'isCName' => false,
-//                // 'token' => null,
-//                // 'proxy' => null,
-//            ],
+            //            'oss' => [
+            //                'driver' => \Hyperf\Filesystem\Adapter\AliyunOssAdapterFactory::class,
+            //                'accessId' => env('OSS_ACCESS_ID'),
+            //                'accessSecret' => env('OSS_ACCESS_SECRET'),
+            //                'bucket' => env('OSS_BUCKET'),
+            //                'endpoint' => env('OSS_ENDPOINT'),
+            //                // 'timeout' => 3600,
+            //                // 'connectTimeout' => 10,
+            //                // 'isCName' => false,
+            //                // 'token' => null,
+            //                // 'proxy' => null,
+            //            ],
 
             $config->set($configKey, $defaultDiskConf);
 
@@ -67,11 +69,10 @@ class AliOssCdn extends ResourcesCdn
     /**
      * 获取云存储对象
      * @param array $extData
-     * @return array  云存储对象
+     * @return array 云存储对象
      */
     public static function getDisk($extData)
     {
-
         $rs = static::getDefaultResponseData(Constant::ORDER_STATUS_SHIPPED_INT, Constant::PARAMETER_STRING_DEFAULT);
 
         $storeId = data_get($extData, Constant::DB_COLUMN_SITE_ID, 0);
@@ -96,7 +97,7 @@ class AliOssCdn extends ResourcesCdn
             return $rs;
         }
 
-        //获取文件系统对象
+        // 获取文件系统对象
         $factory = ApplicationContext::getContainer()->get(FilesystemFactory::class);
         $filesystem = $factory->get($diskName);
 
@@ -107,10 +108,11 @@ class AliOssCdn extends ResourcesCdn
     }
 
     /**
-     * 获取资源域名
+     * 获取资源域名.
      * @param int $storeId 品牌id
      * @param int $resourceType 资源类型 0:所有 1:图片 2:视频 3:js 4:css 默认:1
-     * @param array|null $domain cdn域名
+     * @param null|array $domain cdn域名
+     * @param mixed $isCn
      * @return array 图片cdn域名
      */
     public static function getResourceTypeDomain($storeId = 1, $resourceType = 0, $isCn = false, $domain = null)
@@ -126,5 +128,4 @@ class AliOssCdn extends ResourcesCdn
 
         return array_values(array_filter(array_unique($cdnDomains)));
     }
-
 }

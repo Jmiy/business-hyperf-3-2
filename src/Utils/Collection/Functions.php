@@ -9,9 +9,11 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Business\Hyperf\Utils\Collection;
 
 use function Hyperf\Collection\data_get as dataGet;
+
 /**
  * Get an item from an array or object using "dot" notation.
  *

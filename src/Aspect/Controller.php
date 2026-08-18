@@ -1,11 +1,10 @@
 <?php
 
 declare(strict_types=1);
-
 /**
- * AOP 面向切面编程
+ * This file is part of Hyperf.
  *
- * @link     https://www.hyperf.wiki/3.0/#/zh-cn/aop
+ * @link     https://www.hyperf.io
  * @document https://hyperf.wiki
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
@@ -13,18 +12,17 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Aspect;
 
-use function Business\Hyperf\Utils\Collection\data_get;
 use Business\Hyperf\Constants\Constant;
+use Business\Hyperf\Exception\Handler\AppExceptionHandler;
+use Business\Hyperf\Utils\Response;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
-
-use Hyperf\HttpServer\Annotation\Controller as AnnotationController;
 use Hyperf\HttpServer\Annotation\AutoController;
-
-use Business\Hyperf\Utils\Response;
-use Business\Hyperf\Exception\Handler\AppExceptionHandler;
+use Hyperf\HttpServer\Annotation\Controller as AnnotationController;
 use Hyperf\HttpServer\Annotation\RequestMapping;
+
+use function Business\Hyperf\Utils\Collection\data_get;
 
 #[Aspect(classes: [AppExceptionHandler::class . '::handle'], annotations: [AnnotationController::class, AutoController::class])]
 class Controller extends AbstractAspect
@@ -45,9 +43,9 @@ class Controller extends AbstractAspect
         }
 
         // 在调用后进行某些处理
-//        getConfigInterface()->get(LoggerFactory::class)->get('sql')->info(
-//            sprintf('[%s] %s', get_class($proceedingJoinPoint->getInstance()), $proceedingJoinPoint->methodName)
-//        );
+        //        getConfigInterface()->get(LoggerFactory::class)->get('sql')->info(
+        //            sprintf('[%s] %s', get_class($proceedingJoinPoint->getInstance()), $proceedingJoinPoint->methodName)
+        //        );
 
         $isNeedDataKey = data_get($annotation, ['options', 'isNeedDataKey'], true);
         $responseStatusCode = data_get($result, Constant::RESPONSE_STATUS_CODE);

@@ -12,10 +12,8 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Listener\AsyncQueue;
 
-use function Hyperf\Support\make;
-use function Business\Hyperf\Utils\Collection\data_get;
 use Business\Hyperf\Constants\Constant;
-use Business\Hyperf\Utils\Monitor\Contract;
+use Business\Hyperf\Job\PublicJob;
 use Hyperf\AsyncQueue\AnnotationJob;
 use Hyperf\AsyncQueue\Event\AfterHandle;
 use Hyperf\AsyncQueue\Event\BeforeHandle;
@@ -27,10 +25,8 @@ use Hyperf\Event\Contract\ListenerInterface;
 use Hyperf\ExceptionHandler\Formatter\FormatterInterface;
 use Hyperf\Logger\LoggerFactory;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
-use Business\Hyperf\Exception\Handler\AppExceptionHandler;
-use Business\Hyperf\Job\PublicJob;
+use function Business\Hyperf\Utils\Collection\data_get;
 use function Hyperf\Config\config;
 use function Hyperf\Coroutine\go;
 
@@ -41,7 +37,7 @@ class QueueHandleListener implements ListenerInterface
 
     public function __construct(LoggerFactory $loggerFactory, protected FormatterInterface $formatter)
     {
-        $this->logger = $loggerFactory->get('queue', config('common.loger.queue', 'default'));//
+        $this->logger = $loggerFactory->get('queue', config('common.loger.queue', 'default'));
     }
 
     public function listen(): array
@@ -75,11 +71,9 @@ class QueueHandleListener implements ListenerInterface
                 case $event instanceof BeforeHandle:
                     $this->logger->info(sprintf('BeforeHandle Processing %s.', $jobClass));
                     break;
-
                 case $event instanceof AfterHandle:
                     $this->logger->info(sprintf('AfterHandle Processed %s.', $jobClass));
                     break;
-
                 case $event instanceof FailedHandle:
                     $this->logger->error(sprintf('FailedHandle Processed %s. Throwable：%s', $jobClass, $this->formatter->format($event->getThrowable())));
 
@@ -88,18 +82,15 @@ class QueueHandleListener implements ListenerInterface
                     });
 
                     break;
-
                 case $event instanceof RetryHandle:
-
                     $this->logger->warning(sprintf('RetryHandle Processed %s. Throwable：%s', $jobClass, $this->formatter->format($event->getThrowable())));
 
-//                    go(function () use ($event) {
-//                        throw $event->getThrowable();
-//                    });
+                    //                    go(function () use ($event) {
+                    //                        throw $event->getThrowable();
+                    //                    });
 
                     break;
             }
         }
     }
-
 }

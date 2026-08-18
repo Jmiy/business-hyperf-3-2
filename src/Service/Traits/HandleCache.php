@@ -1,40 +1,45 @@
 <?php
 
+declare(strict_types=1);
 /**
- * base trait
- * User: Jmiy
- * Date: 2019-05-16
- * Time: 16:50
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
 namespace Business\Hyperf\Service\Traits;
 
-use function Hyperf\Support\call;
-use function Hyperf\Config\config;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Collection\Arr;
-use function Hyperf\Tappable\tap;
+use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Utils\Support\Facades\Cache;
 use Business\Hyperf\Utils\Support\Facades\Redis;
-use Business\Hyperf\Constants\Constant;
-use Hyperf\Cache\CacheManager;
-use Hyperf\Cache\Listener\DeleteListenerEvent;
 use Hyperf\Cache\Annotation\Cacheable;
-use Psr\EventDispatcher\EventDispatcherInterface;
+use Hyperf\Cache\CacheManager;
 use Hyperf\Cache\Driver\RedisDriver;
+use Hyperf\Cache\Listener\DeleteListenerEvent;
+use Hyperf\Collection\Arr;
+use Hyperf\Utils\HigherOrderTapProxy;
+use Psr\EventDispatcher\EventDispatcherInterface;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Config\config;
+use function Hyperf\Support\call;
+use function Hyperf\Tappable\tap;
 
 trait HandleCache
 {
     /**
-     * 获取缓存时间 单位秒
-     * @param int|null $ttl 单位秒 或者 null
+     * 获取缓存时间 单位秒.
+     * @param null|int $ttl 单位秒 或者 null
      * @param string $key 缓存时间在配置中的key
      * @param string $group 缓存配置 group
      * @return int|mixed
      */
-    public static function getCacheTtl(int|null $ttl = null, string $key = 'ttl', string $group = 'default')
+    public static function getCacheTtl(?int $ttl = null, string $key = 'ttl', string $group = 'default')
     {
-        return $ttl !== null ? $ttl : config('cache.' . $group . '.' . $key, 86400); //认证缓存时间 单位秒
+        return $ttl !== null ? $ttl : config('cache.' . $group . '.' . $key, 86400); // 认证缓存时间 单位秒
     }
 
     /**
@@ -47,21 +52,21 @@ trait HandleCache
     }
 
     /**
-     * 获取缓存key
-     * @param ...$keys
+     * 获取缓存key.
      * @return string
      */
     public static function getCacheKey(...$keys)
     {
-        return strtolower(implode(':', Arr::collapse([
+        return strtolower(implode(':', Arr::collapse(
+            [
                 [static::getCachePrefix()],
-                func_get_args()
+                func_get_args(),
             ]
         )));
     }
 
     /**
-     * 获取集合成员
+     * 获取集合成员.
      * @param array $member 成员
      * @return string $member
      */
@@ -71,7 +76,7 @@ trait HandleCache
     }
 
     /**
-     * 获取集合成员原始数据
+     * 获取集合成员原始数据.
      * @param string $member 成员 json
      * @return array $member
      */
@@ -80,9 +85,9 @@ trait HandleCache
         return json_decode($member, true);
     }
 
-    /********************Laravel 缓存系统 统一入口 start **********************************************/
+    /* Laravel 缓存系统 统一入口 start */
     /**
-     * 获取要清空的tags
+     * 获取要清空的tags.
      * @return array
      */
     public static function getClearTags()
@@ -96,15 +101,15 @@ trait HandleCache
     }
 
     /**
-     * Laravel 缓存系统 统一入口
+     * Laravel 缓存系统 统一入口.
      * @param string $tag
      * @param array $actionData
-     * @return \Hyperf\Utils\HigherOrderTapProxy|mixed|null
+     * @return null|HigherOrderTapProxy|mixed
      */
     public static function handleCache($tag = '', $actionData = [])
     {
         $tags = config('cache.tags.' . $tag, ['{' . $tag . '}']);
-        //$service = data_get($actionData, Constant::SERVICE, '');
+        // $service = data_get($actionData, Constant::SERVICE, '');
         $service = Cache::class;
         $method = data_get($actionData, Constant::METHOD, '');
         $parameters = data_get($actionData, Constant::PARAMETERS, []);
@@ -117,19 +122,19 @@ trait HandleCache
 
         $serialHandle = data_get($actionData, Constant::SERIAL_HANDLE, []);
         if ($serialHandle) {
-//            foreach ($serialHandle as $handleData) {
-//                $service = data_get($handleData, 'service', '');
-//                $method = data_get($handleData, 'method', '');
-//                $parameters = data_get($handleData, 'parameters', []);
-//                $instance = $instance->{$method}(...$parameters);
-//            }
+            //            foreach ($serialHandle as $handleData) {
+            //                $service = data_get($handleData, 'service', '');
+            //                $method = data_get($handleData, 'method', '');
+            //                $parameters = data_get($handleData, 'parameters', []);
+            //                $instance = $instance->{$method}(...$parameters);
+            //            }
 
             foreach ($serialHandle as $handleData) {
                 $instance = tap($instance, function (&$instance) use ($handleData) {
                     $service = data_get($handleData, Constant::SERVICE, '');
                     $method = data_get($handleData, Constant::METHOD, '');
                     $parameters = data_get($handleData, Constant::PARAMETERS, []);
-                    //$instance = $instance->{$method}(...$parameters);
+                    // $instance = $instance->{$method}(...$parameters);
                     $instance = call([$instance, $method], $parameters);
                 });
             }
@@ -139,11 +144,10 @@ trait HandleCache
     }
 
     /**
-     * 清空缓存
+     * 清空缓存.
      */
     public static function clear()
     {
-
         $tags = static::getClearTags();
         $rs = false;
         $service = static::getNamespaceClass();
@@ -161,29 +165,27 @@ trait HandleCache
      * @param string $cacheKey key
      * @param string $method 方法
      * @param int $releaseTime 释放边界值 单位秒
-     * @return void
      */
     public static function forceReleaseLock($cacheKey, $method = 'forceRelease', $releaseTime = 10)
     {
-
-//        loger('sys', 'sys')->info(
-//            sprintf(
-//                '[' .  __METHOD__ . '] [cacheKey: %s] [method: %s] [releaseTime: %d].',
-//                '释放分布式锁: '.$cacheKey,
-//                $method,
-//                $releaseTime
-//            )
-//        );
+        //        loger('sys', 'sys')->info(
+        //            sprintf(
+        //                '[' .  __METHOD__ . '] [cacheKey: %s] [method: %s] [releaseTime: %d].',
+        //                '释放分布式锁: '.$cacheKey,
+        //                $method,
+        //                $releaseTime
+        //            )
+        //        );
 
         $service = static::getNamespaceClass();
         $tag = static::getCacheTags();
 
         if ($releaseTime == 0) {
-            //释放锁
+            // 释放锁
             $handleCacheData = getJobData($service, 'lock', [$cacheKey], null, [
                 Constant::SERIAL_HANDLE => [
                     getJobData($service, $method, []),
-                ]
+                ],
             ]);
             return static::handleCache($tag, $handleCacheData);
         }
@@ -193,38 +195,35 @@ trait HandleCache
         $has = static::handleCache($tag, $handleCacheData);
 
         switch ($method) {
-            case 'forceRelease'://释放锁
+            case 'forceRelease':// 释放锁
                 if ($has) {
                     $handleCacheData = getJobData($service, 'get', [$key]);
                     $releaseLockTime = static::handleCache($tag, $handleCacheData);
                     $nowTime = time();
                     if ($nowTime >= $releaseLockTime) {
-
-                        //删除统计
+                        // 删除统计
                         $handleCacheData = getJobData($service, 'forget', [$key]);
                         static::handleCache($tag, $handleCacheData);
 
-                        //释放锁
+                        // 释放锁
                         $handleCacheData = getJobData($service, 'lock', [$cacheKey], null, [
                             Constant::SERIAL_HANDLE => [
                                 getJobData($service, $method, []),
-                            ]
+                            ],
                         ]);
                         static::handleCache($tag, $handleCacheData);
                     }
                 }
 
                 break;
-
-            case 'statisticsLock'://统计锁
-                //increment('key', $amount)
+            case 'statisticsLock':// 统计锁
+                // increment('key', $amount)
                 if (empty($has)) {
                     $time = time() + $releaseTime;
-                    $handleCacheData = getJobData($service, 'add', [$key, $time]); //, 600
+                    $handleCacheData = getJobData($service, 'add', [$key, $time]); // , 600
                     static::handleCache($tag, $handleCacheData);
                 }
                 break;
-
             default:
                 break;
         }
@@ -233,7 +232,7 @@ trait HandleCache
     }
 
     /**
-     * 使用分布式锁处理
+     * 使用分布式锁处理.
      * @param array $cacheKeyData key
      * @param array $parameters 分布式锁参数
      * @return mixed
@@ -246,16 +245,16 @@ trait HandleCache
         $handleCacheData = getJobData($service, 'lock', [$cacheKey], null, [
             Constant::SERIAL_HANDLE => [
                 getJobData($service, 'get', $parameters),
-            ]
+            ],
         ]);
 
         return static::handleCache($tag, $handleCacheData);
     }
-    /********************Laravel 缓存系统 统一入口 end **********************************************/
+    /* Laravel 缓存系统 统一入口 end */
 
     /**
-     * 删除缓存数据
-     * @param string|array $key
+     * 删除缓存数据.
+     * @param array|string $key
      */
     public static function del($key)
     {
@@ -263,28 +262,26 @@ trait HandleCache
     }
 
     /**
-     * 获取缓存Driver
-     * @param string $group
-     * @return \Hyperf\Cache\Driver\RedisDriver
+     * 获取缓存Driver.
      */
     public static function getCacheDriver(string $group = 'default'): RedisDriver
-    {//* @return \Hyperf\Cache\Driver\DriverInterface
+    {// * @return \Hyperf\Cache\Driver\DriverInterface
         return getApplicationContainer()->get(CacheManager::class)->getDriver($group);
     }
 
-//    /**
-//     * 注解方式 @Cacheable 生成的缓存,只能作用于 非trait 类方法
-//     * @param $id
-//     * @return string
-//     */
-//    #[Cacheable(prefix: "cacheable_demo", ttl: 9000, value: "_#{id}", listener: "user-update")]
-//    public static function cacheableDemo($id)
-//    {
-//        var_dump(__METHOD__);
-//        return $id . '_' . uniqid();
-//    }
+    //    /**
+    //     * 注解方式 @Cacheable 生成的缓存,只能作用于 非trait 类方法
+    //     * @param $id
+    //     * @return string
+    //     */
+    //    #[Cacheable(prefix: "cacheable_demo", ttl: 9000, value: "_#{id}", listener: "user-update")]
+    //    public static function cacheableDemo($id)
+    //    {
+    //        var_dump(__METHOD__);
+    //        return $id . '_' . uniqid();
+    //    }
 
-    //清理 @Cacheable 生成的缓存
+    // 清理 @Cacheable 生成的缓存
     public static function flushCache(string $listener, array $arguments)
     {
         return getApplicationContainer()->get(EventDispatcherInterface::class)->dispatch(new DeleteListenerEvent($listener, $arguments));
@@ -296,13 +293,12 @@ trait HandleCache
     }
 
     /**
-     * 清空功能权限缓存
+     * 清空功能权限缓存.
      * @return array
      */
     public static function clearCacheModelPrefix(string $prefix = '', string $group = 'default')
     {
-        //var_dump(implode(':',[static::class,__FUNCTION__,$prefix, $group]));
-        return static::clearCachePrefix(static::getCacheKey($prefix), $group);//
+        // var_dump(implode(':',[static::class,__FUNCTION__,$prefix, $group]));
+        return static::clearCachePrefix(static::getCacheKey($prefix), $group);
     }
-
 }

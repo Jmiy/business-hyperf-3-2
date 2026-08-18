@@ -71,6 +71,13 @@ class Config
         isset($config['grpc']) && $this->grpc = array_replace($this->grpc, $config['grpc']);
     }
 
+    public function __set($name, $value)
+    {
+        $this->{$name} = $value;
+
+        return $this;
+    }
+
     public function getBaseUri(): string
     {
         return $this->baseUri;
@@ -119,12 +126,5 @@ class Config
     public function getVersion(): string
     {
         return $this->version;
-    }
-
-    public function __set($name, $value)
-    {
-        $this->{$name} = $value;
-
-        return $this;
     }
 }

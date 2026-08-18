@@ -12,15 +12,14 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Utils\Support\Facades;
 
-use function Hyperf\Support\make;
-use Business\Hyperf\Utils\Exception\OperatorNotFoundException;
-use Business\Hyperf\Utils\Contracts\Redis\Lua\OperatorInterface;
 use Business\Hyperf\Utils\Contracts\Redis\Lua\BatchFuzzyDelete;
+use Business\Hyperf\Utils\Contracts\Redis\Lua\OperatorInterface;
+use Business\Hyperf\Utils\Exception\OperatorNotFoundException;
 
+use function Hyperf\Support\make;
 
 class Lua
 {
-
     /**
      * @var array<string,OperatorInterface>
      */
@@ -43,7 +42,7 @@ class Lua
             $num = count($keys);
         }
 
-        if (!empty($sha)) {
+        if (! empty($sha)) {
             $luaData = $redis->evalSha($sha, $keys, $num);
         } else {
             $script = $operator->getScript();
@@ -55,11 +54,11 @@ class Lua
 
     public static function getOperator(string $key): OperatorInterface
     {
-        if (!isset(static::$operators[$key])) {
+        if (! isset(static::$operators[$key])) {
             static::$operators[$key] = make($key);
         }
 
-        if (!static::$operators[$key] instanceof OperatorInterface) {
+        if (! static::$operators[$key] instanceof OperatorInterface) {
             throw new OperatorNotFoundException(sprintf('The operator %s is not instanceof OperatorInterface.', $key));
         }
 
@@ -78,6 +77,4 @@ class Lua
     {
         return static::handle(BatchFuzzyDelete::class, [$key], $poolName);
     }
-
-
 }

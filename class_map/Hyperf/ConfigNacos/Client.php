@@ -22,6 +22,7 @@ use JetBrains\PhpStorm\ArrayShape;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+
 use function Hyperf\Support\call;
 
 class Client implements ClientInterface
@@ -53,16 +54,16 @@ class Client implements ClientInterface
         $password = $this->client->getConfig()->getPassword();
         $decryptDefault = $this->config->get('config_center.drivers.nacos.client.decrypt');
 
-//        $baseUri = $this->config->get('config_center.drivers.nacos.client.uri') ?? $this->client->getConfig()->getBaseUri();
-//        $username = $this->config->get('config_center.drivers.nacos.client.username', $this->client->getConfig()->getUsername());
-//        $password = $this->config->get('config_center.drivers.nacos.client.password', $this->client->getConfig()->getPassword());
-//        $decryptDefault = $this->config->get('config_center.drivers.nacos.client.decrypt');
+        //        $baseUri = $this->config->get('config_center.drivers.nacos.client.uri') ?? $this->client->getConfig()->getBaseUri();
+        //        $username = $this->config->get('config_center.drivers.nacos.client.username', $this->client->getConfig()->getUsername());
+        //        $password = $this->config->get('config_center.drivers.nacos.client.password', $this->client->getConfig()->getPassword());
+        //        $decryptDefault = $this->config->get('config_center.drivers.nacos.client.decrypt');
 
         try {
             if ($decryptDefault) {
-                $baseUri = $baseUri === null ? $baseUri : (true === $decryptDefault ? decrypt($baseUri) : call($decryptDefault, [$baseUri]));
-                $username = $username === null ? $username : (true === $decryptDefault ? decrypt($username) : call($decryptDefault, [$username]));
-                $password = $password === null ? $password : (true === $decryptDefault ? decrypt($password) : call($decryptDefault, [$password]));
+                $baseUri = $baseUri === null ? $baseUri : ($decryptDefault === true ? decrypt($baseUri) : call($decryptDefault, [$baseUri]));
+                $username = $username === null ? $username : ($decryptDefault === true ? decrypt($username) : call($decryptDefault, [$username]));
+                $password = $password === null ? $password : ($decryptDefault === true ? decrypt($password) : call($decryptDefault, [$password]));
             }
         } catch (Throwable $throwable) {
         }
@@ -72,7 +73,6 @@ class Client implements ClientInterface
 
         $config = [];
         foreach ($listener as $key => $item) {
-
             $address = $item['address'] ?? null;
             $consumerUsername = $item['username'] ?? null;
             $consumerPassword = $item['password'] ?? null;
@@ -81,10 +81,10 @@ class Client implements ClientInterface
 
             try {
                 if ($decrypt) {
-                    $address = $address === null ? $address : (true === $decrypt ? decrypt($address) : call($decrypt, [$address]));
-                    $consumerUsername = $consumerUsername === null ? $consumerUsername : (true === $decrypt ? decrypt($consumerUsername) : call($decrypt, [$consumerUsername]));
-                    $consumerPassword = $consumerPassword === null ? $consumerPassword : (true === $decrypt ? decrypt($consumerPassword) : call($decrypt, [$consumerPassword]));
-                    $tenant = $tenant === null ? $tenant : (true === $decrypt ? decrypt($tenant) : call($decrypt, [$tenant]));
+                    $address = $address === null ? $address : ($decrypt === true ? decrypt($address) : call($decrypt, [$address]));
+                    $consumerUsername = $consumerUsername === null ? $consumerUsername : ($decrypt === true ? decrypt($consumerUsername) : call($decrypt, [$consumerUsername]));
+                    $consumerPassword = $consumerPassword === null ? $consumerPassword : ($decrypt === true ? decrypt($consumerPassword) : call($decrypt, [$consumerPassword]));
+                    $tenant = $tenant === null ? $tenant : ($decrypt === true ? decrypt($tenant) : call($decrypt, [$tenant]));
                 }
             } catch (Throwable $throwable) {
             }
@@ -99,11 +99,11 @@ class Client implements ClientInterface
                 $this->client->getConfig()->password = $consumerPassword;
             }
 
-//            var_dump(__METHOD__,
-//                $this->client->getConfig()->getBaseUri(),
-//                $this->client->getConfig()->getUsername(),
-//                $this->client->getConfig()->getPassword(),
-//            );
+            //            var_dump(__METHOD__,
+            //                $this->client->getConfig()->getBaseUri(),
+            //                $this->client->getConfig()->getUsername(),
+            //                $this->client->getConfig()->getPassword(),
+            //            );
 
             try {
                 $dataId = $item['data_id'] ?? '';
@@ -129,7 +129,6 @@ class Client implements ClientInterface
                     $this->client->getConfig()->password = $password;
                 }
             }
-
         }
 
         return $config;

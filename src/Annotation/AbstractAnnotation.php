@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 /**
- * 自定义注解
- * @link     https://www.hyperf.wiki/3.0/#/zh-cn/annotation?id=%e5%88%9b%e5%bb%ba%e4%b8%80%e4%b8%aa%e6%b3%a8%e8%a7%a3%e7%b1%bb
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
 namespace Business\Hyperf\Annotation;

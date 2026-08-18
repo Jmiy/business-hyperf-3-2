@@ -1,21 +1,51 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Support\Facades;
 
-use function Hyperf\Config\config;
-use function Business\Hyperf\Utils\Collection\data_get;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Redis\RedisFactory;
+use Hyperf\Redis\RedisProxy;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use RuntimeException;
+use Throwable;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Config\config;
 
 class Redis
 {
     /**
-     * 获取redis连接
+     * Handle dynamic, static calls to the object.
+     *
+     * @param string $method
+     * @param array $args
+     * @return mixed
+     *
+     * @throws RuntimeException
+     */
+    public static function __callStatic($method, $args)
+    {
+        return static::getRedis()->{$method}(...$args);
+    }
+
+    /**
+     * 获取redis连接.
      * @param string $poolName 连接池
-     * @return \Hyperf\Redis\RedisProxy
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     * @throws \Throwable
+     * @return RedisProxy
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws Throwable
      */
     public static function getRedis(string $poolName = 'default')
     {
@@ -30,40 +60,26 @@ class Redis
     }
 
     /**
-     * Handle dynamic, static calls to the object.
-     *
-     * @param string $method
-     * @param array $args
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    public static function __callStatic($method, $args)
-    {
-        return static::getRedis()->{$method}(...$args);
-    }
-
-    /**
      * Adds a values to the set value stored at key. 添加集合元素 支持设置缓存时长
      *
      * @param $key 集合key
      * @param array $value 集合元素
-     * @param int|null $seconds 缓存时间  单位秒(支持：0.02)
+     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
      * @param string $poolName 连接池
      * @return array|bool|int The number of elements added to the set.
-     * If this value is already in the set, FALSE is returned
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     * @throws \Throwable
+     *                        If this value is already in the set, FALSE is returned
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws Throwable
      *
-     * @link    https://redis.io/commands/sadd
+     * @see    https://redis.io/commands/sadd
      * @example
      * <pre>
      * $redis->sAdd('k', 'v1');                // int(1)
      * $redis->sAdd('k', 'v1', 'v2', 'v3');    // int(2)
      * </pre>
      */
-    public static function sAdd($key, array $value, int|null $seconds = null, string $poolName = 'default')
+    public static function sAdd($key, array $value, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -84,18 +100,18 @@ class Redis
 
     /**
      * Fills in a whole hash. Non-string values are converted to string, using the standard (string) cast.
-     * NULL values are stored as empty strings
+     * NULL values are stored as empty strings.
      *
-     * @param $key
      * @param array $dictionary key → value array
-     * @param int|null $seconds 缓存时间  单位秒(支持：0.02)
+     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
      * @param string $poolName 连接池
+     * @param mixed $key
      * @return array|bool
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     * @throws \Throwable
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws Throwable
      *
-     * @link    https://redis.io/commands/hmset
+     * @see    https://redis.io/commands/hmset
      * @example
      * <pre>
      * $redis->del('user:1');
@@ -103,7 +119,7 @@ class Redis
      * $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
      * </pre>
      */
-    public static function hmset($key, array $dictionary, int|null $seconds = null, string $poolName = 'default')
+    public static function hmset($key, array $dictionary, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -128,7 +144,7 @@ class Redis
      * @param string $key
      * @param string $hashKey
      * @param int $value (integer) value that will be added to the member's value
-     * @param int|null $seconds 缓存时间  单位秒(支持：0.02)
+     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
      * @param string $poolName 连接池
      *
      * @return array|int the new value
@@ -141,7 +157,7 @@ class Redis
      * $redis->hIncrBy('h', 'x', 1); // h[x] ← 2 + 1. Returns 3
      * </pre>
      */
-    public static function hIncrBy($key, $hashKey, $value, int|null $seconds = null, string $poolName = 'default')
+    public static function hIncrBy($key, $hashKey, $value, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -161,20 +177,13 @@ class Redis
     }
 
     /**
-     * Adds the specified member with a given score to the sorted set stored at key
+     * Adds the specified member with a given score to the sorted set stored at key.
      *
      * @param string $key Required key
-     * @param array $options Options if needed
-     * @param float $score1 Required score
-     * @param string|mixed $value1 Required value
-     * @param float $score2 Optional score
-     * @param string|mixed $value2 Optional value
-     * @param float $scoreN Optional score
-     * @param string|mixed $valueN Optional value
      *
      * @return int Number of values added
      *
-     * @link    https://redis.io/commands/zadd
+     * @see    https://redis.io/commands/zadd
      * @example
      * <pre>
      * <pre>
@@ -204,7 +213,7 @@ class Redis
      * </pre>
      * </pre>
      */
-    public static function zAdd($key, array $value, int|null $seconds = null, string $poolName = 'default')
+    public static function zAdd($key, array $value, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -232,7 +241,7 @@ class Redis
      *
      * @return int the new value
      *
-     * @link    https://redis.io/commands/incrby
+     * @see    https://redis.io/commands/incrby
      * @example
      * <pre>
      * $redis->incr('key1');        // key1 didn't exists, set to 0 before the increment and now has the value 1
@@ -242,7 +251,7 @@ class Redis
      * $redis->incrBy('key1', 10);  // 14
      * </pre>
      */
-    public static function incrBy($key, $value, int|null $seconds = null, string $poolName = 'default')
+    public static function incrBy($key, $value, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -272,7 +281,7 @@ class Redis
      *
      * @throws RedisException
      *
-     * @link    https://redis.io/commands/setbit
+     * @see    https://redis.io/commands/setbit
      * @example
      * <pre>
      * $redis->set('key', "*");     // ord("*") = 42 = 0x2f = "0010 1010"
@@ -281,7 +290,7 @@ class Redis
      * $redis->get('key');          // chr(0x2f) = "/" = b("0010 1111")
      * </pre>
      */
-    public static function setBit($key, $offset, $value, int|null $seconds = null, string $poolName = 'default')
+    public static function setBit($key, $offset, $value, ?int $seconds = null, string $poolName = 'default')
     {
         $instance = static::getRedis($poolName);
 
@@ -299,5 +308,4 @@ class Redis
             'pexpire' => data_get($manyResult, 1),
         ];
     }
-
 }

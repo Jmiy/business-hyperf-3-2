@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Business\Hyperf\Kernel\Codec;
 
 use Business\Hyperf\Kernel\Codec\Exception\InvalidArgumentException;
+use Exception;
 use Hyperf\Contract\Arrayable;
 use Hyperf\Contract\Xmlable;
 use SimpleXMLElement;
@@ -20,22 +21,19 @@ use SimpleXMLElement;
 class Xml
 {
     /**
-     * 编码为 xml
-     * @param mixed $data
-     * @param SimpleXMLElement|null $parentNode
-     * @param string $root
+     * 编码为 xml.
      * @return string
-     * @throws \Exception
+     * @throws Exception
      */
-    public static function toXml(mixed $data, ?SimpleXMLElement $parentNode = null, string $root = 'root'): string|bool
+    public static function toXml(mixed $data, ?SimpleXMLElement $parentNode = null, string $root = 'root'): bool|string
     {
         if ($data instanceof Xmlable) {
-            return (string)$data;
+            return (string) $data;
         }
         if ($data instanceof Arrayable) {
             $data = $data->toArray();
         } else {
-            $data = (array)$data;
+            $data = (array) $data;
         }
         if ($parentNode === null) {
             $xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?>' . "<{$root}></{$root}>");
@@ -47,9 +45,9 @@ class Xml
                 self::toXml($value, $xml->addChild($key));
             } else {
                 if (is_numeric($key)) {
-                    $xml->addChild('item' . $key, (string)$value);
+                    $xml->addChild('item' . $key, (string) $value);
                 } else {
-                    $xml->addChild($key, (string)$value);
+                    $xml->addChild($key, (string) $value);
                 }
             }
         }
@@ -58,11 +56,6 @@ class Xml
 
     /**
      * 解码
-     * @param string $xml
-     * @param bool|null $associative
-     * @param int $depth
-     * @param int $flags
-     * @return mixed
      * @throws InvalidArgumentException
      */
     public static function toArray(string $xml, ?bool $associative = null, int $depth = 512, int $flags = 0): mixed

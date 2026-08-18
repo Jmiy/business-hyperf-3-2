@@ -21,31 +21,25 @@ class Contract
     /**
      * 执行服务
      * @param string $provider 平台
-     * @param string|array $serviceProvider 服务提供者
+     * @param array|string $serviceProvider 服务提供者
      * @param string $method 执行方法
-     * @param array|null $parameters 参数
-     * @return mixed
+     * @param null|array $parameters 参数
      */
-    public static function handle(string $provider, string|array $serviceProvider, string $method, ?array $parameters = []): mixed
+    public static function handle(string $provider, array|string $serviceProvider, string $method, ?array $parameters = []): mixed
     {
         $_service = '';
         switch ($serviceProvider) {
             case 'Product':
                 $_service = 'Product';
                 break;
-
             case 'Base':
                 $_service = '';
                 $serviceProvider = 'BaseService';
                 break;
-
             default:
-
                 break;
         }
 
-        return static::managerHandle($provider, (is_array($serviceProvider) ? $serviceProvider : [$_service, $serviceProvider]), $method, $parameters);
-
+        return static::managerHandle($provider, is_array($serviceProvider) ? $serviceProvider : [$_service, $serviceProvider], $method, $parameters);
     }
-
 }

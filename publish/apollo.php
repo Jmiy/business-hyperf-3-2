@@ -1,8 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-use function Hyperf\Support\env;
 /**
  * This file is part of Hyperf.
  *
@@ -11,9 +9,11 @@ use function Hyperf\Support\env;
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+use function Hyperf\Support\env;
+
 return [
     // 是否开启配置中心的接入流程，为 true 时会自动启动一个 ConfigFetcherProcess 进程用于更新配置
-    'enable' =>  env('APOLLO_ENABLE', false),
+    'enable' => env('APOLLO_ENABLE', false),
     // 是否使用独立进程来拉取config，如果否则将在worker内以协程方式拉取
     'use_standalone_process' => true,
     // Apollo Server

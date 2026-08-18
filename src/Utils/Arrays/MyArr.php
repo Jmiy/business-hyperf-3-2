@@ -1,13 +1,24 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Arrays;
 
-use function Hyperf\Collection\data_set;
 use Hyperf\Collection\Arr;
+use RuntimeException;
+
+use function Hyperf\Collection\data_set;
 
 class MyArr
 {
-
     /**
      * Handle dynamic, static calls to the object.
      *
@@ -15,7 +26,7 @@ class MyArr
      * @param array $args
      * @return mixed
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public static function __callStatic($method, $args)
     {
@@ -23,7 +34,8 @@ class MyArr
     }
 
     /**
-     * 判断数组是否为索引数组
+     * 判断数组是否为索引数组.
+     * @param mixed $arr
      */
     public static function isIndexedArray($arr)
     {
@@ -41,7 +53,8 @@ class MyArr
      *   2 => 'b',
      *   3 => 'c',
      *   5 => 'd',
-     * ]
+     * ].
+     * @param mixed $arr
      */
     public static function isContinuousIndexedArray($arr)
     {
@@ -53,7 +66,8 @@ class MyArr
     }
 
     /**
-     * 判断数组是否为关联数组
+     * 判断数组是否为关联数组.
+     * @param mixed $arr
      */
     public static function isAssocArray($arr)
     {
@@ -65,7 +79,8 @@ class MyArr
     }
 
     /**
-     * 判断数组是否为混合数组
+     * 判断数组是否为混合数组.
+     * @param mixed $arr
      */
     public static function isMixedArray($arr)
     {
@@ -80,7 +95,7 @@ class MyArr
     {
         foreach ($data as $key => $value) {
             if (Arr::accessible($value) && Arr::isAssoc($value)) {
-                //$value = Arr::wrap($value);
+                // $value = Arr::wrap($value);
                 $data = Arr::collapse([$data, $value]);
                 foreach ($data as $_value) {
                     if (Arr::accessible($_value) && Arr::isAssoc($_value)) {
@@ -93,11 +108,12 @@ class MyArr
     }
 
     /**
-     * 数组 去重 去空处理
+     * 数组 去重 去空处理.
+     * @param mixed $data
      */
     public static function handle($data)
     {
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return $data;
         }
         return array_unique(array_filter($data));
@@ -111,7 +127,7 @@ class MyArr
         $results = [];
         foreach ($array as $key => $value) {
             $_key = $prepend . $key . $suffix;
-            if (is_array($value) && !empty($value)) {
+            if (is_array($value) && ! empty($value)) {
                 data_set($results, $_key, static::prependSuffix($value, $prepend, $suffix));
             } else {
                 data_set($results, $_key, $value);
@@ -120,5 +136,4 @@ class MyArr
 
         return $results;
     }
-
 }

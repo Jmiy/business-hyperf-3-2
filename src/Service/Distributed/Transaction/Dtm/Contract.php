@@ -14,30 +14,27 @@ namespace Business\Hyperf\Service\Distributed\Transaction\Dtm;
 
 use App\Service\Cron\TaskService;
 use App\Service\Sso\SsoService;
+use Business\Hyperf\Constants\Constant;
 use DtmClient\Annotation\Barrier;
 use DtmClient\DbTransaction\DBTransactionInterface;
 use DtmClient\TCC;
 use DtmClient\TransContext;
 use DtmClient\XA;
+use Exception;
 use Hyperf\Context\Context;
 use Hyperf\HttpServer\Annotation\Controller;
-use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\RequestMapping;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\Support\Network;
-use Psr\Http\Message\ResponseInterface;
+
 use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Collection\Arr;
-use Business\Hyperf\Constants\Constant;
-use Business\Hyperf\Utils\Response;
 use function Hyperf\Config\config;
-use function Hyperf\Coroutine\go;
 use function Hyperf\Support\call;
 
 #[Controller(prefix: '/distributed/transaction')]
 class Contract
 {
-    #[RequestMapping(path: "getHttpServiceUri", methods: "get,post", options: [
+    #[RequestMapping(path: 'getHttpServiceUri', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -46,7 +43,7 @@ class Contract
         return 'http://' . Network::ip() . ':' . config('server.servers.http.port');
     }
 
-    #[RequestMapping(path: "getGrpcServiceUri", methods: "get,post", options: [
+    #[RequestMapping(path: 'getGrpcServiceUri', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -55,7 +52,7 @@ class Contract
         return Network::ip() . ':' . config('server.servers.grpc.port') . '/busi.Busi/';
     }
 
-    #[RequestMapping(path: "getToken", methods: "get,post", options: [
+    #[RequestMapping(path: 'getToken', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -82,14 +79,11 @@ class Contract
         if (array_key_exists('is_salesman_id', $accountInfo)) {
             $tokenParameters['is_salesman_id'] = data_get($accountInfo, ['is_salesman_id'], false);
         }
-        $tokenData = SsoService::getToken($tokenParameters);
-
-//        var_dump(__METHOD__, Context::get(Constant::CONTEXT_REQUEST_DATA), $tokenData);
-
-        return $tokenData;
+        return SsoService::getToken($tokenParameters);
+        //        var_dump(__METHOD__, Context::get(Constant::CONTEXT_REQUEST_DATA), $tokenData);
     }
 
-    #[RequestMapping(path: "handle", methods: "get,post", options: [
+    #[RequestMapping(path: 'handle', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -102,38 +96,36 @@ class Contract
             $method = data_get($handler, Constant::METHOD, '');
             $parameters = data_get($handler, Constant::PARAMETERS, []);
 
-            return call([$service, $method], $parameters);//兼容各种调用 $service::{$method}(...$parameters);
-
+            return call([$service, $method], $parameters); // 兼容各种调用 $service::{$method}(...$parameters);
         }
         return null;
     }
 
-    #[RequestMapping(path: "transaction", methods: "get,post", options: [
+    #[RequestMapping(path: 'transaction', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
     public static function transaction(
-        array   $handlerData = [
+        array $handlerData = [
             [
                 'try' => [],
                 'confirm' => [],
                 'cancel' => [],
-            ]
+            ],
         ],
         ?string $distributedTransactionMode = 'TCC',
         ?string $gid = null
-    )
-    {
+    ) {
         $result = [];
         if ($distributedTransactionMode == 'AX') {
             $xa = getApplicationContainer()->get(XA::class);
             $requestData = Context::get(Constant::CONTEXT_REQUEST_DATA);
             $gid = $gid ?? (data_get($requestData, 'gid') ?? (TransContext::getGid() ?: null));
-//            $gid = $gid ?? $xa->generateGid();
+            //            $gid = $gid ?? $xa->generateGid();
 
             $method = __METHOD__;
             // 开启Xa 全局事物
-            $result = $xa->globalTransaction(function () use ($xa, $handlerData, $method) {//XA $xa
+            $result = $xa->globalTransaction(function () use ($xa, $handlerData) {// XA $xa
                 $serviceUri = static::getHttpServiceUri();
 
                 $result = [];
@@ -145,19 +137,18 @@ class Contract
                     $rs = $respone->getBody()->getContents();
                     $result[$key] = json_decode($rs, true) ?? $rs;
 
-//                    var_dump($method, $rs, $result[$key]);
+                    //                    var_dump($method, $rs, $result[$key]);
                 }
 
-//                var_dump($method, $result);
+                //                var_dump($method, $result);
                 return $result;
             }, $gid);
-
         } else {
             try {
                 $result = getApplicationContainer()->get(TCC::class)->globalTransaction(function (TCC $tcc) use ($handlerData) {
                     $serviceUri = static::getHttpServiceUri();
 
-                    $handlerData = array_reverse($handlerData);//反转数组元素
+                    $handlerData = array_reverse($handlerData); // 反转数组元素
                     $result = null;
                     foreach ($handlerData as $handler) {
                         $respone = $tcc->callBranch(
@@ -168,7 +159,6 @@ class Contract
                         );
 
                         $result[$key] = $respone->getBody()->getContents();
-
                     }
                 }, $gid);
             } catch (Throwable $e) {
@@ -182,7 +172,7 @@ class Contract
         ];
     }
 
-    #[RequestMapping(path: "tcc/success", methods: "get,post", options: [
+    #[RequestMapping(path: 'tcc/success', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -195,8 +185,8 @@ class Contract
                     [
                         'trans_name' => 'trans_A',
                         'try' => getJobData(static::class, 'getToken'),
-//                        'confirm' => getJobData(static::class, 'getToken'),
-//                        'cancel' => getJobData(static::class, 'getToken'),
+                        //                        'confirm' => getJobData(static::class, 'getToken'),
+                        //                        'cancel' => getJobData(static::class, 'getToken'),
                     ],
                     $serviceUri . '/distributed/transaction/tcc/try',
                     $serviceUri . '/distributed/transaction/tcc/confirm',
@@ -206,9 +196,9 @@ class Contract
                 $tcc->callBranch(
                     [
                         'trans_name' => 'trans_B',
-//                        'try' => getJobData(static::class, 'getToken'),
-//                        'confirm' => getJobData(static::class, 'getToken'),
-//                        'cancel' => getJobData(static::class, 'getToken'),
+                        //                        'try' => getJobData(static::class, 'getToken'),
+                        //                        'confirm' => getJobData(static::class, 'getToken'),
+                        //                        'cancel' => getJobData(static::class, 'getToken'),
                     ],
                     $serviceUri . '/distributed/transaction/tcc/try',
                     $serviceUri . '/distributed/transaction/tcc/confirm',
@@ -221,13 +211,12 @@ class Contract
         return TransContext::getGid();
     }
 
-    #[RequestMapping(path: "tcc/try", methods: "get,post", options: [
+    #[RequestMapping(path: 'tcc/try', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
     public function try(RequestInterface $request): array
     {
-
         $request->getHeaders();
 
         static::handle(['try']);
@@ -237,7 +226,7 @@ class Contract
         ];
     }
 
-    #[RequestMapping(path: "tcc/confirm", methods: "get,post", options: [
+    #[RequestMapping(path: 'tcc/confirm', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -253,7 +242,7 @@ class Contract
         ];
     }
 
-    #[RequestMapping(path: "tcc/cancel", methods: "get,post", options: [
+    #[RequestMapping(path: 'tcc/cancel', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
@@ -269,37 +258,34 @@ class Contract
         ];
     }
 
-    #[RequestMapping(path: "xa/fail", methods: "get,post", options: [
+    #[RequestMapping(path: 'xa/fail', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
     public function xaFail(): array
     {
         var_dump(__METHOD__);
-        throw new \Exception('xa==>xaFail', 26655);
+        throw new Exception('xa==>xaFail', 26655);
         return [];
-
     }
 
-    #[RequestMapping(path: "xa/localTransaction", methods: "get,post", options: [
+    #[RequestMapping(path: 'xa/localTransaction', methods: 'get,post', options: [
         'aop' => false,
         'auth' => false,
     ])]
     public function localTransaction(RequestInterface $request): mixed
     {
-//        var_dump(__METHOD__, $request->all());
+        //        var_dump(__METHOD__, $request->all());
 
         $requestData = $request->all();
 
         // 模拟分布式系统下transOut方法
         $xa = getApplicationContainer()->get(XA::class);
-        return $xa->localTransaction(function (DBTransactionInterface $dbTransaction) use ($requestData) {
-
+        return $xa->localTransaction(function (DBTransactionInterface $dbTransaction) {
             // 请使用 DBTransactionInterface 处理本地 Mysql 事物
-//            $dbTransaction->xaExecute('UPDATE `order` set `amount` = `amount` - ? where id = 2', [$amount]);
+            //            $dbTransaction->xaExecute('UPDATE `order` set `amount` = `amount` - ? where id = 2', [$amount]);
             return static::handle(['handle']);
         });
-//        return ['status' => 0, 'message' => 'ok'];
+        //        return ['status' => 0, 'message' => 'ok'];
     }
-
 }

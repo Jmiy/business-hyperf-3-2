@@ -45,11 +45,11 @@ class FailedChannelListener implements ListenerInterface
      */
     public function process(object $event): void
     {
-        if (!$event instanceof QueueLength) {
+        if (! $event instanceof QueueLength) {
             return;
         }
 
-        if (!in_array($event->key, $this->channels)) {
+        if (! in_array($event->key, $this->channels)) {
             return;
         }
 
@@ -60,7 +60,7 @@ class FailedChannelListener implements ListenerInterface
         $event->driver->flush();
         $this->logger->info(sprintf('%s channel flush %d messages success.', $event->key, $event->length));
 
-//        $event->driver->reload();
-//        $this->logger->info(sprintf('%s channel reload %d messages to waiting channel success.', $event->key, $event->length));
+        //        $event->driver->reload();
+        //        $this->logger->info(sprintf('%s channel reload %d messages to waiting channel success.', $event->key, $event->length));
     }
 }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 /**
- * AOP 面向切面编程
+ * This file is part of Hyperf.
  *
- * @link     https://www.hyperf.wiki/3.0/#/zh-cn/aop
+ * @link     https://www.hyperf.io
  * @document https://hyperf.wiki
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
@@ -12,25 +12,24 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Aspect;
 
-use function Business\Hyperf\Utils\Collection\data_get;
+use Business\Hyperf\Annotation\Validator as AnnotationValidator;
+use Business\Hyperf\Utils\PublicValidator;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 
-use Business\Hyperf\Annotation\Validator as AnnotationValidator;
-use Business\Hyperf\Utils\PublicValidator;
+use function Business\Hyperf\Utils\Collection\data_get;
 
 #[Aspect(classes: [], annotations: [AnnotationValidator::class])]
 class Validator extends AbstractAspect
 {
-
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
         $arguments = $proceedingJoinPoint->arguments;
         $argumentData = data_get($arguments, 'keys', []);
 
         $annotation = $proceedingJoinPoint->getAnnotationMetadata()->method[AnnotationValidator::class];
-//        var_dump($annotation->options);
+        //        var_dump($annotation->options);
 
         $rules = [];
         $messages = [];
@@ -43,7 +42,7 @@ class Validator extends AbstractAspect
         }
 
         $validator = PublicValidator::handle($argumentData, $rules, $messages, $type);
-        if ($validator !== true) {//如果验证没有通过就提示用户
+        if ($validator !== true) {// 如果验证没有通过就提示用户
             return json_decode($validator->getBody()->getContents(), true);
         }
 

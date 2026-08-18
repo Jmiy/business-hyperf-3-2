@@ -2,81 +2,61 @@
 
 declare(strict_types=1);
 /**
- * Job
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
 namespace Business\Hyperf\Job;
 
-use Business\Hyperf\Utils\Support\Facades\QueueRedisDriver;
-use Business\Hyperf\Utils\Support\Facades\Redis;
-use Hyperf\Collection\Arr;
-use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Config\config;
 use Business\Hyperf\Constants\Constant;
 use Business\Hyperf\Service\Log\LogService;
-use Carbon\Carbon;
-use Business\Hyperf\Exception\Handler\AppExceptionHandler as ExceptionHandler;
+use Business\Hyperf\Utils\Support\Facades\QueueRedisDriver;
+use Business\Hyperf\Utils\Support\Facades\Redis;
+use Throwable;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Config\config;
 use function Hyperf\Coroutine\go;
 
 class DingDingJob extends Job
 {
-
-    /**
-     * @var
-     */
-    private $message;
-
-    /**
-     * @var
-     */
-    private $code;
-
-    /**
-     * @var
-     */
-    private $file;
-
-    /**
-     * @var
-     */
-    private $line;
-
-    /**
-     * @var
-     */
-    private $url;
-
-    /**
-     * @var
-     */
-    private $trace;
-
-    /**
-     * @var
-     */
-    private $exception;
-
     /**
      * @var string
      */
     protected $robot = 'default';
 
-    /**
-     * @var
-     */
+    private $message;
+
+    private $code;
+
+    private $file;
+
+    private $line;
+
+    private $url;
+
+    private $trace;
+
+    private $exception;
+
     private $simple;
 
     /**
      * Create a new job instance.
      *
-     * @param $url
-     * @param $exception
-     * @param $message
-     * @param $code
-     * @param $file
-     * @param $line
-     * @param $trace
-     * @param $simple
+     * @param mixed $url
+     * @param mixed $exception
+     * @param mixed $message
+     * @param mixed $code
+     * @param mixed $file
+     * @param mixed $line
+     * @param mixed $trace
+     * @param mixed $robot
+     * @param mixed $simple
      */
     public function __construct($url, $exception, $message, $code, $file, $line, $trace, $robot = 'default', $simple = false)
     {
@@ -93,8 +73,7 @@ class DingDingJob extends Job
 
     /**
      * Execute the job.
-     * ding()->at([],true)->text(implode(PHP_EOL, $message));//@所有人
-     * @return void
+     * ding()->at([],true)->text(implode(PHP_EOL, $message));//@所有人.
      */
     public function handle()
     {
@@ -106,8 +85,8 @@ class DingDingJob extends Job
             $messages[] = implode(':', [$key, $value]);
         }
 
-        if ($this->code && !$this->simple) {
-            $messages[] = implode(':', ['stackTrace', (is_array($this->trace) ? json_encode($this->trace, JSON_UNESCAPED_UNICODE) : $this->trace)]);;
+        if ($this->code && ! $this->simple) {
+            $messages[] = implode(':', ['stackTrace', is_array($this->trace) ? json_encode($this->trace, JSON_UNESCAPED_UNICODE) : $this->trace]);
         }
 
         $data = [
@@ -117,12 +96,12 @@ class DingDingJob extends Job
             'line' => $this->line,
             'business_data' => json_encode($this->trace, JSON_UNESCAPED_UNICODE),
             'stack_trace' => data_get($this->trace, 'stackTrace', ''),
-            'server_ip' => data_get($this->trace, ['serverIp'], ''),//服务器ip
+            'server_ip' => data_get($this->trace, ['serverIp'], ''), // 服务器ip
             'level' => data_get($this->trace, 'level', ''),
             'client_ip' => data_get($this->trace, 'clientIp', ''),
         ];
 
-        $isInsertDb = config('monitor.isInsertDb', true);//是否记录到数据库 true：是  false：否  默认：true
+        $isInsertDb = config('monitor.isInsertDb', true); // 是否记录到数据库 true：是  false：否  默认：true
         if ($isInsertDb) {
             LogService::insertData('Log', [data_get($this->trace, Constant::DB_COLUMN_PLATFORM, ''), date('Ymd')], $data);
         }
@@ -134,7 +113,6 @@ class DingDingJob extends Job
 
         $dingCodeData = explode(',', data_get($dingConfig, ['code'], ''));
         if (in_array('all', $dingCodeData) || in_array($this->code, $dingCodeData)) {
-
             $nx = true;
             $poolName = data_get($dingConfig, ['poolName'], 'default');
             $ex = data_get($dingConfig, ['lockEx'], 3600);
@@ -149,14 +127,14 @@ class DingDingJob extends Job
             try {
                 $redis = Redis::getRedis($poolName);
 
-                //获取分布式锁
-                $nx = $redis->set($distributedLockKey, 1, ['nx', 'ex' => $ex]);// Will set the key, if it doesn't exist, with a ttl of 10 seconds
-//            //释放分布式锁
-//            $rs = $redis->del($distributedLockKey);
-            } catch (\Throwable $exception) {
-//                go(function () use ($throwable) {
-//                    throw $throwable;
-//                });
+                // 获取分布式锁
+                $nx = $redis->set($distributedLockKey, 1, ['nx', 'ex' => $ex]); // Will set the key, if it doesn't exist, with a ttl of 10 seconds
+                //            //释放分布式锁
+                //            $rs = $redis->del($distributedLockKey);
+            } catch (Throwable $exception) {
+                //                go(function () use ($throwable) {
+                //                    throw $throwable;
+                //                });
             }
 
             if ($nx == true) {
@@ -164,5 +142,4 @@ class DingDingJob extends Job
             }
         }
     }
-
 }

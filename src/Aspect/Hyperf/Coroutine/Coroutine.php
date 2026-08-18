@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * This file is part of Hyperf.
  *
- * @link     https://www.hyperf.wiki/3.0/#/zh-cn/aop
+ * @link     https://www.hyperf.io
  * @document https://hyperf.wiki
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
@@ -12,22 +12,21 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Aspect\Hyperf\Coroutine;
 
+use Business\Hyperf\Constants\Constant;
+use Business\Hyperf\Exception\Handler\AppExceptionHandler;
+use Hyperf\Context\ApplicationContext;
+use Hyperf\Context\Context;
+use Hyperf\Coroutine\Coroutine as CoroutineCoroutine;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
-
-use Hyperf\Coroutine\Coroutine as CoroutineCoroutine;
 use Hyperf\Engine\Coroutine as Co;
-use Hyperf\Context\Context;
-use Hyperf\Context\ApplicationContext;
-
 use Throwable;
-use Business\Hyperf\Constants\Constant;
-use Business\Hyperf\Exception\Handler\AppExceptionHandler;
-use function Hyperf\Support\call;
-use function Hyperf\Support\make;
+
 use function Hyperf\Collection\data_get;
 use function Hyperf\Config\config;
+use function Hyperf\Support\call;
+use function Hyperf\Support\make;
 
 #[Aspect(classes: [CoroutineCoroutine::class . '::create', CoroutineCoroutine::class . '::printLog'], annotations: [])]
 class Coroutine extends AbstractAspect
@@ -42,15 +41,13 @@ class Coroutine extends AbstractAspect
             try {
                 // 按需复制，禁止复制 Socket，不然会导致 Socket 跨协程调用从而报错。
                 $keys = config('common.context_copy', []);
-                $keys[] = Constant::JSON_RPC_HEADERS_KEY;//'json-rpc-headers';
+                $keys[] = Constant::JSON_RPC_HEADERS_KEY; // 'json-rpc-headers';
                 Context::copy($id, $keys);
                 call($callable);
             } catch (Throwable $throwable) {
                 try {
                     ApplicationContext::getContainer()->get(AppExceptionHandler::class)->log($throwable);
-//                    make(AppExceptionHandler::class)->log($throwable);
                 } catch (Throwable $e1) {
-
                 }
             }
         });
@@ -66,10 +63,8 @@ class Coroutine extends AbstractAspect
     {
         $throwable = $proceedingJoinPoint->getArguments();
         try {
-//            make(AppExceptionHandler::class)->log(...$throwable);
             ApplicationContext::getContainer()->get(AppExceptionHandler::class)->log(...$throwable);
         } catch (Throwable $e1) {
-
         }
     }
 
@@ -77,6 +72,4 @@ class Coroutine extends AbstractAspect
     {
         return call([$this, $proceedingJoinPoint->methodName], [$proceedingJoinPoint]);
     }
-
-
 }

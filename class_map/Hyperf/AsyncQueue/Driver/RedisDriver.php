@@ -12,13 +12,10 @@ declare(strict_types=1);
 
 namespace Hyperf\AsyncQueue\Driver;
 
-use Hyperf\AsyncQueue\Driver\Driver;
 use Hyperf\AsyncQueue\Exception\InvalidQueueException;
 use Hyperf\AsyncQueue\JobInterface;
 use Hyperf\AsyncQueue\JobMessage;
 use Hyperf\AsyncQueue\MessageInterface;
-use Hyperf\Collection\Arr;
-use Hyperf\Coroutine\Coroutine;
 use Hyperf\Redis\RedisFactory;
 use Hyperf\Redis\RedisProxy;
 use Psr\Container\ContainerInterface;
@@ -67,8 +64,8 @@ class RedisDriver extends Driver
         $waitingType = data_get($this->config, ['waiting']);
         // 如果待执行队列是使用有序集合实现，并且当前压入队列的元素已经存在，就直接返回压入队列成功
         if (
-            $waitingType === 'zset' &&
-            (
+            $waitingType === 'zset'
+            && (
                 $this->redis->zScore($this->channel->getWaiting(), $data) !== false
                 || $this->redis->zScore($this->channel->getDelayed(), $data) !== false
             )
@@ -80,12 +77,11 @@ class RedisDriver extends Driver
         if ($delay === 0) {
             if ($waitingType === 'zset') {
                 return (bool) $this->redis->zAdd($this->channel->getWaiting(), $microtime, $data);
-            } else {
-                return (bool) $this->redis->lPush($this->channel->getWaiting(), $data);
             }
+            return (bool) $this->redis->lPush($this->channel->getWaiting(), $data);
         }
 
-        return (bool) $this->redis->zAdd($this->channel->getDelayed(), $microtime + $delay, $data);//time()
+        return (bool) $this->redis->zAdd($this->channel->getDelayed(), $microtime + $delay, $data); // time()
     }
 
     public function delete(JobInterface $job): bool
@@ -165,7 +161,7 @@ class RedisDriver extends Driver
             }
 
             $res = $this->redis->rpop($channel, $listLen);
-            if (empty($res) || ! is_array($res)) {//如果待执行队列没有数据了，就跳出整个循环
+            if (empty($res) || ! is_array($res)) {// 如果待执行队列没有数据了，就跳出整个循环
                 return $num;
             }
 
@@ -208,7 +204,7 @@ class RedisDriver extends Driver
             $waitingLen = $this->redis->lLen($this->channel->getWaiting());
         }
         return [
-//            'waiting' => $this->redis->lLen($this->channel->getWaiting()),
+            //            'waiting' => $this->redis->lLen($this->channel->getWaiting()),
             'waiting' => $waitingLen,
             'delayed' => $this->redis->zCard($this->channel->getDelayed()),
             'failed' => $this->redis->lLen($this->channel->getFailed()),
@@ -256,7 +252,7 @@ class RedisDriver extends Driver
         if ($expired = $this->redis->zrevrangebyscore($from, (string) $now, '-inf', $options)) {
             foreach ($expired as $job) {
                 if ($this->redis->zRem($from, $job)) {
-                    if (!empty($to)) {
+                    if (! empty($to)) {
                         if ($to == $this->channel->getWaiting() && data_get($this->config, ['waiting']) === 'zset') {
                             $this->redis->zAdd($to, microtime(true), $job);
                         } else {

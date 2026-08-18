@@ -12,13 +12,14 @@ declare(strict_types=1);
 
 namespace Hyperf\Cache\Driver;
 
-use function Hyperf\Collection\data_set;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Collection\Arr;
 use Hyperf\Cache\Exception\InvalidArgumentException;
+use Hyperf\Collection\Arr;
 use Hyperf\Redis\Redis;
-use Psr\Container\ContainerInterface;
 use Hyperf\Redis\RedisFactory;
+use Psr\Container\ContainerInterface;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_set;
 
 class RedisDriver extends Driver implements KeyCollectorInterface
 {
@@ -29,10 +30,15 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         parent::__construct($container, $config);
 
         $this->redis = $container->get(RedisFactory::class)->get($config['options']['pool'] ?? data_get($config, ['connection'], 'default'));
-//        $this->poolName = data_get($config, 'connection', 'default');
-//        $this->redis = $container->get(RedisFactory::class)->get(data_get($config, 'connection', 'default'));
+        //        $this->poolName = data_get($config, 'connection', 'default');
+        //        $this->redis = $container->get(RedisFactory::class)->get(data_get($config, 'connection', 'default'));
 
-//        $this->redis = $container->get(\Redis::class);
+        //        $this->redis = $container->get(\Redis::class);
+    }
+
+    public function __call($name, $arguments)
+    {
+        return $this->redis->{$name}(...$arguments);
     }
 
     public function get($key, $default = null): mixed
@@ -166,23 +172,18 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->redis;
     }
 
-    public function __call($name, $arguments)
-    {
-        return $this->redis->{$name}(...$arguments);
-    }
-
     public function handleParameters($_, $index = 0)
     {
         if ($index === 'all') {
             foreach ($_ as $k => $v) {
-                data_set($_, (is_int($k) ? (string)$k : $k), $this->getCacheKey($v));
+                data_set($_, is_int($k) ? (string) $k : $k, $this->getCacheKey($v));
             }
             return $_;
         }
 
         $index = is_array($index) ? $index : [$index];
         foreach ($index as $k) {
-            data_set($_, (is_int($k) ? (string)$k : $k), $this->getCacheKey(data_get($_, $k)));
+            data_set($_, is_int($k) ? (string) $k : $k, $this->getCacheKey(data_get($_, $k)));
         }
 
         return $_;
@@ -208,18 +209,18 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Verify if the specified key/keys exists
+     * Verify if the specified key/keys exists.
      *
      * This function took a single argument and returned TRUE or FALSE in phpredis versions < 4.0.0.
      *
      * @param string|string[] $key
      *
-     * @return int|bool The number of keys tested that do exist
+     * @return bool|int The number of keys tested that do exist
      *
      * @since >= 4.0 Returned int, if < 4.0 returned bool
      *
-     * @link https://redis.io/commands/exists
-     * @link https://github.com/phpredis/phpredis#exists
+     * @see https://redis.io/commands/exists
+     * @see https://github.com/phpredis/phpredis#exists
      * @example
      * <pre>
      * $redis->exists('key'); // 1
@@ -236,14 +237,14 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Sets an expiration date (a timeout) on an item
+     * Sets an expiration date (a timeout) on an item.
      *
      * @param string $key The key that will disappear
-     * @param int $ttl The key's remaining Time To Live, in seconds
+     * @param mixed $seconds
      *
      * @return bool TRUE in case of success, FALSE in case of failure
      *
-     * @link    https://redis.io/commands/expire
+     * @see    https://redis.io/commands/expire
      * @example
      * <pre>
      * $redis->set('x', '42');
@@ -283,14 +284,14 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Sets an expiration date (a timeout in milliseconds) on an item
+     * Sets an expiration date (a timeout in milliseconds) on an item.
      *
-     * @param string $key The key that will disappear.
-     * @param int $ttl The key's remaining Time To Live, in milliseconds
+     * @param string $key the key that will disappear
+     * @param mixed $milliseconds
      *
      * @return bool TRUE in case of success, FALSE in case of failure
      *
-     * @link    https://redis.io/commands/pexpire
+     * @see    https://redis.io/commands/pexpire
      * @example
      * <pre>
      * $redis->set('x', '42');
@@ -305,7 +306,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Sets an expiration date (a timestamp) on an item. Requires a timestamp in milliseconds
+     * Sets an expiration date (a timestamp) on an item. Requires a timestamp in milliseconds.
      *
      * @param string $key The key that will disappear
      * @param int $timestamp Unix timestamp. The key's date of death, in seconds from Epoch time
@@ -347,11 +348,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Scan a set for members
+     * Scan a set for members.
      *
-     * @param string $key The set to search.
-     * @param int $iterator LONG (reference) to the iterator as we go.
-     * @param string $pattern String, optional pattern to match against.
+     * @param string $key the set to search
+     * @param int $iterator LONG (reference) to the iterator as we go
+     * @param string $pattern string, optional pattern to match against
      * @param int $count How many members to return at a time (Redis might return a different amount)
      *
      * @return array|bool PHPRedis will return an array of keys or FALSE when we're done iterating
@@ -373,19 +374,19 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Sort
+     * Sort.
      *
      * @param string $key
      * @param array $option array(key => value, ...) - optional, with the following keys and values:
-     * - 'by' => 'some_pattern_*',
-     * - 'limit' => array(0, 1),
-     * - 'get' => 'some_other_pattern_*' or an array of patterns,
-     * - 'sort' => 'asc' or 'desc',
-     * - 'alpha' => TRUE,
-     * - 'store' => 'external-key'
+     *                      - 'by' => 'some_pattern_*',
+     *                      - 'limit' => array(0, 1),
+     *                      - 'get' => 'some_other_pattern_*' or an array of patterns,
+     *                      - 'sort' => 'asc' or 'desc',
+     *                      - 'alpha' => TRUE,
+     *                      - 'store' => 'external-key'
      *
      * @return array
-     * An array of values, or a number corresponding to the number of elements stored if that was used
+     *               An array of values, or a number corresponding to the number of elements stored if that was used
      *
      * @link    https://redis.io/commands/sort
      * @example
@@ -423,13 +424,13 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Count bits in a string
+     * Count bits in a string.
      *
      * @param string $key
      *
      * @return int The number of bits set to 1 in the value behind the input key
      *
-     * @link    https://redis.io/commands/bitcount
+     * @see    https://redis.io/commands/bitcount
      * @example
      * <pre>
      * $redis->set('bit', '345'); // // 11 0011  0011 0100  0011 0101
@@ -454,7 +455,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return int The size of the string stored in the destination key
      *
-     * @link    https://redis.io/commands/bitop
+     * @see    https://redis.io/commands/bitop
      * @example
      * <pre>
      * $redis->set('bit1', '1'); // 11 0001
@@ -555,7 +556,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return int 0 or 1, the value of the bit before it was set
      *
-     * @link    https://redis.io/commands/setbit
+     * @see    https://redis.io/commands/setbit
      * @example
      * <pre>
      * $redis->set('key', "*");     // ord("*") = 42 = 0x2f = "0010 1010"
@@ -571,7 +572,6 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         $key = $this->getCacheKey($key);
 
         if ($seconds !== null) {
-
             $instance->multi();
 
             $instance->setbit($key, $offset, $value);
@@ -584,7 +584,6 @@ class RedisDriver extends Driver implements KeyCollectorInterface
                 'result' => data_get($manyResult, 0),
                 'pexpire' => data_get($manyResult, 1),
             ];
-
         } else {
             $result = $instance->setbit($key, $offset, $value);
         }
@@ -617,10 +616,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * If the hash table doesn't exist, or the key doesn't exist, FALSE is returned.
      *
      * @param string $key
-     * @param string $hashKey1
-     * @param string ...$otherHashKeys
      *
-     * @return int|bool Number of deleted fields
+     * @return bool|int Number of deleted fields
      *
      * @link    https://redis.io/commands/hdel
      * @example
@@ -652,11 +649,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Verify if the specified member exists in a key.
      *
      * @param string $key
-     * @param string $hashKey
+     * @param mixed $field
      *
-     * @return bool If the member exists in the hash table, return TRUE, otherwise return FALSE.
+     * @return bool if the member exists in the hash table, return TRUE, otherwise return FALSE
      *
-     * @link    https://redis.io/commands/hexists
+     * @see    https://redis.io/commands/hexists
      * @example
      * <pre>
      * $redis->hSet('h', 'a', 'x');
@@ -674,11 +671,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * If the hash table doesn't exist, or the key doesn't exist, FALSE is returned.
      *
      * @param string $key
-     * @param string $hashKey
+     * @param mixed $field
      *
      * @return string The value, if the command executed successfully BOOL FALSE in case of failure
      *
-     * @link    https://redis.io/commands/hget
+     * @see    https://redis.io/commands/hget
      */
     public function hget($key, $field)
     {
@@ -690,9 +687,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      *
-     * @return array An array of elements, the contents of the hash.
+     * @return array an array of elements, the contents of the hash
      *
-     * @link    https://redis.io/commands/hgetall
+     * @see    https://redis.io/commands/hgetall
      * @example
      * <pre>
      * $redis->del('h');
@@ -725,12 +722,12 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Increments the value of a member from a hash by a given amount.
      *
      * @param string $key
-     * @param string $hashKey
-     * @param int $value (integer) value that will be added to the member's value
+     * @param mixed $field
+     * @param mixed $increment
      *
      * @return int the new value
      *
-     * @link    https://redis.io/commands/hincrby
+     * @see    https://redis.io/commands/hincrby
      * @example
      * <pre>
      * $redis->del('h');
@@ -746,7 +743,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     public function hmincrby($key, array $values)
     {
         $instance = $this->redis;
-        //$instance->select('1');
+        // $instance->select('1');
         $key = $this->getCacheKey($key);
 
         $instance->multi();
@@ -769,7 +766,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Increment the float value of a hash field by the given amount
+     * Increment the float value of a hash field by the given amount.
      *
      * @param string $key
      * @param string $field
@@ -777,7 +774,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return float
      *
-     * @link    https://redis.io/commands/hincrbyfloat
+     * @see    https://redis.io/commands/hincrbyfloat
      * @example
      * <pre>
      * $redis = new Redis();
@@ -839,11 +836,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Returns the length of a hash, in number of items
+     * Returns the length of a hash, in number of items.
      *
      * @param string $key
      *
-     * @return int|bool the number of items in a hash, FALSE if the key doesn't exist or isn't a hash
+     * @return bool|int the number of items in a hash, FALSE if the key doesn't exist or isn't a hash
      *
      * @link    https://redis.io/commands/hlen
      * @example
@@ -863,12 +860,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Retirieve the values associated to the specified fields in the hash.
      *
      * @param string $key
-     * @param array $hashKeys
      *
-     * @return array Array An array of elements, the values of the specified fields in the hash,
-     * with the hash keys as array keys.
+     * @return array array An array of elements, the values of the specified fields in the hash,
+     *               with the hash keys as array keys
      *
-     * @link    https://redis.io/commands/hmget
+     * @see    https://redis.io/commands/hmget
      * @example
      * <pre>
      * $redis->del('h');
@@ -884,15 +880,14 @@ class RedisDriver extends Driver implements KeyCollectorInterface
 
     /**
      * Fills in a whole hash. Non-string values are converted to string, using the standard (string) cast.
-     * NULL values are stored as empty strings
+     * NULL values are stored as empty strings.
      *
      * @param string $key
-     * @param array $hashKeys key → value array
      * @param int $seconds 缓存时间  单位秒(支持：0.02)
      *
-     * @return bool|array
+     * @return array|bool
      *
-     * @link    https://redis.io/commands/hmset
+     * @see    https://redis.io/commands/hmset
      * @example
      * <pre>
      * $redis->del('user:1');
@@ -908,27 +903,27 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         }
 
         $instance = $this->redis;
-        //$instance->select('1');
+        // $instance->select('1');
 
         $instance->multi();
         $instance->hmset($key, $dictionary);
         $instance->pexpire($key, $seconds * 1000);
         $manyResult = $instance->exec();
 
-//        $connection = $instance->connection('cache');
-//
-//        $connection->multi();
-//
-//        $manyResult = $connection->hmset($key, $dictionary);
-//
-//        if ($seconds !== null) {
-//            $result = $connection->pexpire($key, $seconds * 1000);
-//            $manyResult = $result && $manyResult;
-//        }
-//
-//        $manyResult = $connection->exec();
-//
-//        $instance->disconnect();
+        //        $connection = $instance->connection('cache');
+        //
+        //        $connection->multi();
+        //
+        //        $manyResult = $connection->hmset($key, $dictionary);
+        //
+        //        if ($seconds !== null) {
+        //            $result = $connection->pexpire($key, $seconds * 1000);
+        //            $manyResult = $result && $manyResult;
+        //        }
+        //
+        //        $manyResult = $connection->exec();
+        //
+        //        $instance->disconnect();
 
         return [
             'result' => data_get($manyResult, 0),
@@ -940,13 +935,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Scan a HASH value for members, with an optional pattern and count.
      *
      * @param string $key
-     * @param int $iterator
-     * @param string $pattern Optional pattern to match against.
-     * @param int $count How many keys to return in a go (only a sugestion to Redis).
+     * @param mixed $cursor
      *
-     * @return array An array of members that match our pattern.
+     * @return array an array of members that match our pattern
      *
-     * @link    https://redis.io/commands/hscan
+     * @see    https://redis.io/commands/hscan
      * @example
      * <pre>
      * // $iterator = null;
@@ -957,7 +950,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * // }
      * </pre>
      */
-    public function hscan($key, $cursor, array|null $options = null)
+    public function hscan($key, $cursor, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, $this->handleParameters(func_get_args()));
     }
@@ -966,12 +959,12 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Adds a value to the hash stored at key. If this value is already in the hash, FALSE is returned.
      *
      * @param string $key
-     * @param string $hashKey
      * @param string $value
+     * @param mixed $field
      *
-     * @return int|bool
-     * - 1 if value didn't exist and was added successfully,
-     * - 0 if the value was already present and was replaced, FALSE if there was an error.
+     * @return bool|int
+     *                  - 1 if value didn't exist and was added successfully,
+     *                  - 0 if the value was already present and was replaced, FALSE if there was an error
      *
      * @link    https://redis.io/commands/hset
      * @example
@@ -993,10 +986,10 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Adds a value to the hash stored at key only if this field isn't already in the hash.
      *
      * @param string $key
-     * @param string $hashKey
      * @param string $value
+     * @param mixed $field
      *
-     * @return  bool TRUE if the field was set, FALSE if it was already present.
+     * @return bool TRUE if the field was set, FALSE if it was already present
      *
      * @link    https://redis.io/commands/hsetnx
      * @example
@@ -1049,15 +1042,15 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Get the string length of the value associated with field in the hash stored at key
+     * Get the string length of the value associated with field in the hash stored at key.
      *
      * @param string $key
      * @param string $field
      *
      * @return int the string length of the value associated with field, or zero when field is not present in the hash
-     * or key does not exist at all.
+     *             or key does not exist at all
      *
-     * @link https://redis.io/commands/hstrlen
+     * @see https://redis.io/commands/hstrlen
      * @since >= 3.2
      */
     public function hstrlen($key, $field)
@@ -1162,13 +1155,13 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * 从列表中弹出一个值，将弹出的元素插入到另外一个列表中并返回它； 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
      * A blocking version of rpoplpush, with an integral timeout in the third parameter.
      *
-     * @param string $srcKey
-     * @param string $dstKey
      * @param int $timeout
+     * @param mixed $source
+     * @param mixed $destination
      *
-     * @return  string|mixed|bool  The element that was moved in case of success, FALSE in case of timeout
+     * @return bool|mixed|string The element that was moved in case of success, FALSE in case of timeout
      *
-     * @link    https://redis.io/commands/brpoplpush
+     * @see    https://redis.io/commands/brpoplpush
      */
     public function brpoplpush($source, $destination, $timeout)
     {
@@ -1184,9 +1177,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param string $key
      * @param int $index
      *
-     * @return mixed|bool the element at this index
+     * @return bool|mixed the element at this index
      *
-     * Bool FALSE if the key identifies a non-string data type, or no value corresponds to this index in the list Key.
+     * Bool FALSE if the key identifies a non-string data type, or no value corresponds to this index in the list Key
      *
      * @link    https://redis.io/commands/lindex
      * @example
@@ -1211,11 +1204,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * or the pivot didn't exists, the value is not inserted.
      *
      * @param string $key
-     * @param int $position Redis::BEFORE | Redis::AFTER
      * @param string $pivot
-     * @param string|mixed $value
+     * @param mixed|string $value
+     * @param mixed $whence
      *
-     * @return int The number of the elements in the list, -1 if the pivot didn't exists.
+     * @return int the number of the elements in the list, -1 if the pivot didn't exists
      *
      * @link    https://redis.io/commands/linsert
      * @example
@@ -1248,8 +1241,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      *
-     * @return int|bool The size of the list identified by Key exists.
-     * bool FALSE if the data type identified by Key is not list
+     * @return bool|int The size of the list identified by Key exists.
+     *                  bool FALSE if the data type identified by Key is not list
      *
      * @link    https://redis.io/commands/llen
      * @example
@@ -1273,9 +1266,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      *
-     * @return  mixed|bool if command executed successfully BOOL FALSE in case of failure (empty list)
+     * @return bool|mixed if command executed successfully BOOL FALSE in case of failure (empty list)
      *
-     * @link    https://redis.io/commands/lpop
+     * @see    https://redis.io/commands/lpop
      * @example
      * <pre>
      * $redis->rPush('key1', 'A');
@@ -1296,9 +1289,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * If the key exists and is not a list, FALSE is returned.
      *
      * @param string $key
-     * @param string|mixed $value1 ... Variadic list of values to push in key, if dont used serialized, used string
      *
-     * @return int|bool The new length of the list in case of success, FALSE in case of Failure
+     * @return bool|int The new length of the list in case of success, FALSE in case of Failure
      *
      * @link https://redis.io/commands/lpush
      * @example
@@ -1324,11 +1316,10 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Adds the string value to the head (left) of the list if the list exists.
      *
      * @param string $key
-     * @param string|mixed $value String, value to push in key
      *
-     * @return int|bool The new length of the list in case of success, FALSE in case of Failure.
+     * @return bool|int the new length of the list in case of success, FALSE in case of Failure
      *
-     * @link    https://redis.io/commands/lpushx
+     * @see    https://redis.io/commands/lpushx
      * @example
      * <pre>
      * $redis->del('key1');
@@ -1352,11 +1343,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      * @param int $start
-     * @param int $end
+     * @param mixed $stop
      *
-     * @return array containing the values in specified range.
+     * @return array containing the values in specified range
      *
-     * @link    https://redis.io/commands/lrange
+     * @see    https://redis.io/commands/lrange
      * @example
      * <pre>
      * $redis->rPush('key1', 'A');
@@ -1380,10 +1371,10 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param int $count
      * @param string $value
      *
-     * @return int|bool the number of elements to remove
-     * bool FALSE if the value identified by key is not a list.
+     * @return bool|int the number of elements to remove
+     *                  bool FALSE if the value identified by key is not a list
      *
-     * @link    https://redis.io/commands/lrem
+     * @see    https://redis.io/commands/lrem
      * @example
      * <pre>
      * $redis->lPush('key1', 'A');
@@ -1411,9 +1402,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param string $value
      *
      * @return bool TRUE if the new value is setted.
-     * FALSE if the index is out of range, or data type identified by key is not a list.
+     *              FALSE if the index is out of range, or data type identified by key is not a list.
      *
-     * @link    https://redis.io/commands/lset
+     * @see    https://redis.io/commands/lset
      * @example
      * <pre>
      * $redis->rPush('key1', 'A');
@@ -1439,7 +1430,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return array|bool Bool return FALSE if the key identify a non-list value
      *
-     * @link        https://redis.io/commands/ltrim
+     * @see        https://redis.io/commands/ltrim
      * @example
      * <pre>
      * $redis->rPush('key1', 'A');
@@ -1461,9 +1452,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      *
-     * @return  mixed|bool if command executed successfully BOOL FALSE in case of failure (empty list)
+     * @return bool|mixed if command executed successfully BOOL FALSE in case of failure (empty list)
      *
-     * @link    https://redis.io/commands/rpop
+     * @see    https://redis.io/commands/rpop
      * @example
      * <pre>
      * $redis->rPush('key1', 'A');
@@ -1482,14 +1473,14 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Pops a value from the tail of a list, and pushes it to the front of another list.
      * Also return this value.
      *
-     * @param string $srcKey
-     * @param string $dstKey
+     * @param mixed $source
+     * @param mixed $destination
      *
-     * @return string|mixed|bool The element that was moved in case of success, FALSE in case of failure.
+     * @return bool|mixed|string the element that was moved in case of success, FALSE in case of failure
      *
      * @since   redis >= 1.1
      *
-     * @link    https://redis.io/commands/rpoplpush
+     * @see    https://redis.io/commands/rpoplpush
      * @example
      * <pre>
      * $redis->del('x', 'y');
@@ -1533,9 +1524,9 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * If the key exists and is not a list, FALSE is returned.
      *
      * @param string $key
-     * @param string|mixed $value1 ... Variadic list of values to push in key, if dont used serialized, used string
+     * @param mixed $values
      *
-     * @return int|bool The new length of the list in case of success, FALSE in case of Failure
+     * @return bool|int The new length of the list in case of success, FALSE in case of Failure
      *
      * @link    https://redis.io/commands/rpush
      * @example
@@ -1561,11 +1552,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Adds the string value to the tail (right) of the list if the ist exists. FALSE in case of Failure.
      *
      * @param string $key
-     * @param string|mixed $value String, value to push in key
+     * @param mixed $values
      *
-     * @return int|bool The new length of the list in case of success, FALSE in case of Failure.
+     * @return bool|int the new length of the list in case of success, FALSE in case of Failure
      *
-     * @link    https://redis.io/commands/rpushx
+     * @see    https://redis.io/commands/rpushx
      * @example
      * <pre>
      * $redis->del('key1');
@@ -1585,12 +1576,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Adds a values to the set value stored at key.
      *
      * @param string $key Required key
-     * @param string|mixed ...$value1 Variadic list of values
      *
-     * @return int|bool The number of elements added to the set.
-     * If this value is already in the set, FALSE is returned
+     * @return bool|int The number of elements added to the set.
+     *                  If this value is already in the set, FALSE is returned
      *
-     * @link    https://redis.io/commands/sadd
+     * @see    https://redis.io/commands/sadd
      * @example
      * <pre>
      * $redis->sAdd('k', 'v1');                // int(1)
@@ -1609,8 +1599,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param array $values Required values
      * @param int $seconds The key's remaining Time To Live, in seconds
      *
-     * @return  int|bool The number of elements added to the set.
-     * If this value is already in the set, FALSE is returned
+     * @return bool|int The number of elements added to the set.
+     *                  If this value is already in the set, FALSE is returned
      *
      * @link    https://redis.io/commands/sadd
      * @link    https://github.com/phpredis/phpredis/commit/3491b188e0022f75b938738f7542603c7aae9077
@@ -1623,7 +1613,6 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      */
     public function sAddArray($key, array $values, $seconds = null)
     {
-
         $parameters = func_get_args();
         unset($parameters[2]);
         $parameters = $this->handleParameters($parameters);
@@ -1640,7 +1629,6 @@ class RedisDriver extends Driver implements KeyCollectorInterface
             'result' => data_get($manyResult, 0),
             'pexpire' => data_get($manyResult, 1),
         ];
-
     }
 
     /**
@@ -1648,7 +1636,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @param string $key
      *
-     * @return int the cardinality of the set identified by key, 0 if the set doesn't exist.
+     * @return int the cardinality of the set identified by key, 0 if the set doesn't exist
      *
      * @link    https://redis.io/commands/scard
      * @example
@@ -1673,7 +1661,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return array string[] The difference of the first set will all the others
      *
-     * @link    https://redis.io/commands/sdiff
+     * @see    https://redis.io/commands/sdiff
      * @example
      * <pre>
      * $redis->del('s0', 's1', 's2');
@@ -1702,15 +1690,15 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Performs the same action as sDiff, but stores the result in the first key
+     * Performs the same action as sDiff, but stores the result in the first key.
      *
-     * @param string $dstKey the key to store the diff into.
+     * @param string $dstKey the key to store the diff into
      * @param string $key1 first key for diff
      * @param string ...$otherKeys variadic list of keys corresponding to sets in redis
      *
-     * @return int|bool The cardinality of the resulting set, or FALSE in case of a missing key
+     * @return bool|int The cardinality of the resulting set, or FALSE in case of a missing key
      *
-     * @link    https://redis.io/commands/sdiffstore
+     * @see    https://redis.io/commands/sdiffstore
      * @example
      * <pre>
      * $redis->del('s0', 's1', 's2');
@@ -1745,13 +1733,13 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * held at the specified keys. If just a single key is specified, then this command
      * produces the members of this set. If one of the keys is missing, FALSE is returned.
      *
-     * @param string $key1 keys identifying the different sets on which we will apply the intersection.
+     * @param string $key1 keys identifying the different sets on which we will apply the intersection
      * @param string ...$otherKeys variadic list of keys
      *
      * @return array contain the result of the intersection between those keys
-     * If the intersection between the different sets is empty, the return value will be empty array.
+     *               If the intersection between the different sets is empty, the return value will be empty array
      *
-     * @link    https://redis.io/commands/sinter
+     * @see    https://redis.io/commands/sinter
      * @example
      * <pre>
      * $redis->sAdd('key1', 'val1');
@@ -1783,13 +1771,13 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     /**
      * Performs a sInter command and stores the result in a new set.
      *
-     * @param string $dstKey the key to store the diff into.
-     * @param string $key1 keys identifying the different sets on which we will apply the intersection.
+     * @param string $dstKey the key to store the diff into
+     * @param string $key1 keys identifying the different sets on which we will apply the intersection
      * @param string ...$otherKeys variadic list of keys
      *
-     * @return int|bool The cardinality of the resulting set, or FALSE in case of a missing key
+     * @return bool|int The cardinality of the resulting set, or FALSE in case of a missing key
      *
-     * @link    https://redis.io/commands/sinterstore
+     * @see    https://redis.io/commands/sinterstore
      * @example
      * <pre>
      * $redis->sAdd('key1', 'val1');
@@ -1825,11 +1813,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Checks if value is a member of the set stored at the key key.
      *
      * @param string $key
-     * @param string|mixed $value
+     * @param mixed $member
      *
      * @return bool TRUE if value is a member of the set at key key, FALSE otherwise
      *
-     * @link    https://redis.io/commands/sismember
+     * @see    https://redis.io/commands/sismember
      * @example
      * <pre>
      * $redis->sAdd('key1' , 'set1');
@@ -1852,7 +1840,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return array An array of elements, the contents of the set
      *
-     * @link    https://redis.io/commands/smembers
+     * @see    https://redis.io/commands/smembers
      * @example
      * <pre>
      * $redis->del('s');
@@ -1881,12 +1869,12 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     /**
      * Moves the specified member from the set at srcKey to the set at dstKey.
      *
-     * @param string $srcKey
-     * @param string $dstKey
-     * @param string|mixed $member
+     * @param mixed|string $member
+     * @param mixed $source
+     * @param mixed $destination
      *
      * @return bool If the operation is successful, return TRUE.
-     * If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, FALSE is returned.
+     *              If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, FALSE is returned.
      *
      * @link    https://redis.io/commands/smove
      * @example
@@ -1911,8 +1899,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param string $key
      * @param int $count [optional]
      *
-     * @return string|mixed|array|bool "popped" values
-     * bool FALSE if set identified by key is empty or doesn't exist.
+     * @return array|bool|mixed|string "popped" values
+     *                                 bool FALSE if set identified by key is empty or doesn't exist
      *
      * @link    https://redis.io/commands/spop
      * @example
@@ -1945,8 +1933,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * @param string $key
      * @param int $count [optional]
      *
-     * @return string|mixed|array|bool value(s) from the set
-     * bool FALSE if set identified by key is empty or doesn't exist and count argument isn't passed.
+     * @return array|bool|mixed|string value(s) from the set
+     *                                 bool FALSE if set identified by key is empty or doesn't exist and count argument isn't passed
      *
      * @link    https://redis.io/commands/srandmember
      * @example
@@ -1976,11 +1964,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      * Removes the specified members from the set value stored at key.
      *
      * @param string $key
-     * @param string|mixed ...$member1 Variadic list of members
+     * @param mixed $member
      *
      * @return int The number of elements removed from the set
      *
-     * @link    https://redis.io/commands/srem
+     * @see    https://redis.io/commands/srem
      * @example
      * <pre>
      * var_dump( $redis->sAdd('k', 'v1', 'v2', 'v3') );    // int(3)
@@ -1998,11 +1986,11 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Scan a set for members
+     * Scan a set for members.
      *
-     * @param string $key The set to search.
-     * @param int $iterator LONG (reference) to the iterator as we go.
-     * @param string $pattern String, optional pattern to match against.
+     * @param string $key the set to search
+     * @param int $iterator LONG (reference) to the iterator as we go
+     * @param string $pattern string, optional pattern to match against
      * @param int $count How many members to return at a time (Redis might return a different amount)
      *
      * @return array|bool PHPRedis will return an array of keys or FALSE when we're done iterating
@@ -2031,7 +2019,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return array string[] The union of all these sets
      *
-     * @link    https://redis.io/commands/sunionstore
+     * @see    https://redis.io/commands/sunionstore
      * @example
      * <pre>
      * $redis->sAdd('s0', '1');
@@ -2061,15 +2049,15 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Performs the same action as sUnion, but stores the result in the first key
+     * Performs the same action as sUnion, but stores the result in the first key.
      *
-     * @param string $dstKey the key to store the diff into.
+     * @param string $dstKey the key to store the diff into
      * @param string $key1 first key for union
      * @param string ...$otherKeys variadic list of keys corresponding to sets in redis
      *
      * @return int Any number of keys corresponding to sets in redis
      *
-     * @link    https://redis.io/commands/sunionstore
+     * @see    https://redis.io/commands/sunionstore
      * @example
      * <pre>
      * $redis->del('s0', 's1', 's2');
@@ -2103,20 +2091,20 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * Adds the specified member with a given score to the sorted set stored at key
+     * Adds the specified member with a given score to the sorted set stored at key.
      *
      * @param string $key Required key
      * @param array $options Options if needed
      * @param float $score1 Required score
-     * @param string|mixed $value1 Required value
+     * @param mixed|string $value1 Required value
      * @param float $score2 Optional score
-     * @param string|mixed $value2 Optional value
+     * @param mixed|string $value2 Optional value
      * @param float $scoreN Optional score
-     * @param string|mixed $valueN Optional value
+     * @param mixed|string $valueN Optional value
      *
      * @return int Number of values added
      *
-     * @link    https://redis.io/commands/zadd
+     * @see    https://redis.io/commands/zadd
      * @example
      * <pre>
      * <pre>
@@ -2183,7 +2171,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
      *
      * @return int the size of a corresponding zRangeByScore
      *
-     * @link    https://redis.io/commands/zcount
+     * @see    https://redis.io/commands/zcount
      * @example
      * <pre>
      * $redis->zAdd('key', 0, 'val0');
@@ -2220,17 +2208,17 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->__call(__FUNCTION__, $this->handleParameters(func_get_args()));
     }
 
-    public function zinterstore($destination, $keys, array|null $options = null)
+    public function zinterstore($destination, $keys, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrange($key, $start, $stop, array|null $options = null)
+    public function zrange($key, $start, $stop, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrangebyscore($key, $min, $max, array|null $options = null)
+    public function zrangebyscore($key, $min, $max, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -2255,12 +2243,12 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrevrange($key, $start, $stop, array|null $options = null)
+    public function zrevrange($key, $start, $stop, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrevrangebyscore($key, $max, $min, array|null $options = null)
+    public function zrevrangebyscore($key, $max, $min, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -2270,7 +2258,7 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zunionstore($destination, $keys, array|null $options = null)
+    public function zunionstore($destination, $keys, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -2280,17 +2268,17 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zscan($key, $cursor, array|null $options = null)
+    public function zscan($key, $cursor, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrangebylex($key, $start, $stop, array|null $options = null)
+    public function zrangebylex($key, $start, $stop, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function zrevrangebylex($key, $start, $stop, array|null $options = null)
+    public function zrevrangebylex($key, $start, $stop, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -2336,10 +2324,10 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     }
 
     /**
-     * @return void|array
+     * @return array|void
      *
      * @see multi()
-     * @link https://redis.io/commands/exec
+     * @see https://redis.io/commands/exec
      */
     public function exec()
     {
@@ -2349,16 +2337,10 @@ class RedisDriver extends Driver implements KeyCollectorInterface
     /**
      * Enter and exit transactional mode.
      *
-     * @param int $mode Redis::MULTI|Redis::PIPELINE
-     * Defaults to Redis::MULTI.
-     * A Redis::MULTI block of commands runs as a single transaction;
-     * a Redis::PIPELINE block is simply transmitted faster to the server, but without any guarantee of atomicity.
-     * discard cancels a transaction.
-     *
      * @return Redis returns the Redis instance and enters multi-mode.
-     * Once in multi-mode, all subsequent method calls return the same object until exec() is called.
+     *               Once in multi-mode, all subsequent method calls return the same object until exec() is called.
      *
-     * @link    https://redis.io/commands/multi
+     * @see    https://redis.io/commands/multi
      * @example
      * <pre>
      * $ret = $redis->multi()
@@ -2515,12 +2497,12 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function georadius($key, $longitude, $latitude, $radius, $unit, array|null $options = null)
+    public function georadius($key, $longitude, $latitude, $radius, $unit, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function georadiusbymember($key, $member, $radius, $unit, array|null $options = null)
+    public function georadiusbymember($key, $member, $radius, $unit, ?array $options = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }

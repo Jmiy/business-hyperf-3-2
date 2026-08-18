@@ -13,18 +13,11 @@ declare(strict_types=1);
 namespace Business\Hyperf\Kernel\HttpMessage\Server\Request;
 
 use Business\Hyperf\Kernel\Codec\Xml;
-use Throwable;
 
 class XmlParser
 {
-
     /**
      * 解码
-     * @param string $rawBody
-     * @param bool $associative
-     * @param int $depth
-     * @param int $flags
-     * @return mixed
      */
     public static function parse(string $rawBody, ?bool $associative = null, int $depth = 512, int $flags = 0): mixed
     {

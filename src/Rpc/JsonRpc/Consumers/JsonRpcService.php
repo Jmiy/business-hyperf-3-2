@@ -59,5 +59,3 @@ class JsonRpcService extends BaseConsumer
         return Arr::collapse([$_context, $context]);
     }
 }
-
-

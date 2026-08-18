@@ -15,5 +15,3 @@ namespace Business\Hyperf\JsonRpc\Consumers;
 class BaseConsumer extends \Business\Hyperf\Rpc\Consumers\BaseConsumer
 {
 }
-
-

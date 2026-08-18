@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Business\Hyperf\Exception;
 
 use Business\Hyperf\Constants\ErrorCode;
@@ -17,12 +18,7 @@ use Throwable;
 
 class BusinessException extends ServerException
 {
-    /**
-     * @param int $code
-     * @param string|null $message
-     * @param Throwable|null $previous
-     */
-    public function __construct(int $code = 0, string|null $message = null, Throwable|null $previous = null)
+    public function __construct(int $code = 0, ?string $message = null, ?Throwable $previous = null)
     {
         if (is_null($message)) {
             $message = ErrorCode::getMessage($code);

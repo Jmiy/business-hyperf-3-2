@@ -56,11 +56,9 @@ class StringHelper
     public static function handleArguments(array $arguments): array
     {
         foreach ($arguments as $k => $v) {
-
             if (is_array($v)) {
                 $result = [];
                 array_walk_recursive($v, function ($item) use (&$result) {
-
                     if (is_array($item)) {
                         // 将数组转为 JSON 或 print_r，这里用 json_encode 保持可读
                         $item = json_encode($item, JSON_UNESCAPED_UNICODE);
@@ -73,7 +71,6 @@ class StringHelper
 
                 // 将数组转为 JSON 或 print_r，这里用 json_encode 保持可读
                 $v = md5(json_encode($result, JSON_UNESCAPED_UNICODE), true);
-
             } elseif (is_object($v) || is_resource($v)) {
                 $v = md5(serialize($v), true);
             }

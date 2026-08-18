@@ -12,15 +12,16 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Aspect\Hyperf\Redis;
 
-use function Hyperf\Collection\data_set;
-use function Hyperf\Support\call;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Throwable;
 use Hyperf\Coroutine\Coroutine;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Redis\RedisProxy as HyperfRedisProxy;
+use Throwable;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_set;
+use function Hyperf\Support\call;
 
 #[Aspect(classes: [HyperfRedisProxy::class . '::__call'], annotations: [])]
 class RedisProxy extends AbstractAspect
@@ -31,9 +32,8 @@ class RedisProxy extends AbstractAspect
     }
 
     /**
-     * @param ProceedingJoinPoint $proceedingJoinPoint
-     * @return mixed|null
-     * @throws \Throwable
+     * @return null|mixed
+     * @throws Throwable
      */
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
@@ -48,9 +48,7 @@ class RedisProxy extends AbstractAspect
         try {
             return call([$this, 'aop' . $proceedingJoinPoint->methodName], [$proceedingJoinPoint]);
         } catch (Throwable $throwable) {
-
             if ($aopProcessCount < 10) {
-
                 Coroutine::sleep(rand(1, 5));
 
                 $name = data_get($proceedingJoinPoint->arguments, 'keys.name');
@@ -61,6 +59,5 @@ class RedisProxy extends AbstractAspect
 
             throw $throwable;
         }
-
     }
 }

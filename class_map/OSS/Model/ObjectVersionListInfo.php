@@ -1,16 +1,48 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace OSS\Model;
 
 /**
- * Class ObjectVersionListInfo
+ * Class ObjectVersionListInfo.
  *
  * The class of return value of ListObjectVersions
- *
- * @package OSS\Model
  */
 class ObjectVersionListInfo
 {
+    private $bucketName = '';
+
+    private $prefix = '';
+
+    private $keyMarker = '';
+
+    private $nextKeyMarker = '';
+
+    private $versionIdMarker = '';
+
+    private $nextVersionIdMarker = '';
+
+    private $maxKeys = 0;
+
+    private $delimiter = '';
+
+    private $isTruncated;
+
+    private $objectVersionList = [];
+
+    private $deleteMarkerList = [];
+
+    private $prefixList = [];
+
     /**
      * ObjectVersionListInfo constructor.
      *
@@ -23,13 +55,8 @@ class ObjectVersionListInfo
      * @param string $maxKeys
      * @param string $delimiter
      * @param null|string $isTruncated
-     * @param array $objectversionList
-     * @param array $deleteMarkerList
-     * @param array $prefixList
      */
-    public function __construct($bucketName, $prefix, $keyMarker, $nextKeyMarker, $versionIdMarker, $nextVersionIdMarker
-        , $maxKeys, $delimiter, $isTruncated
-        , array $objectversionList, array $deleteMarkerList, array $prefixList)
+    public function __construct($bucketName, $prefix, $keyMarker, $nextKeyMarker, $versionIdMarker, $nextVersionIdMarker, $maxKeys, $delimiter, $isTruncated, array $objectversionList, array $deleteMarkerList, array $prefixList)
     {
         $this->bucketName = $bucketName;
         $this->prefix = $prefix;
@@ -138,7 +165,7 @@ class ObjectVersionListInfo
     }
 
     /**
-     * Get the PrefixInfo list
+     * Get the PrefixInfo list.
      *
      * @return PrefixInfo[]
      */
@@ -146,17 +173,4 @@ class ObjectVersionListInfo
     {
         return $this->prefixList;
     }
-
-    private $bucketName = "";
-    private $prefix = "";
-    private $keyMarker = "";
-    private $nextKeyMarker = "";
-    private $versionIdMarker  = "";
-    private $nextVersionIdMarker = "";
-    private $maxKeys = 0;
-    private $delimiter = "";
-    private $isTruncated = null;
-    private $objectVersionList = array();
-    private $deleteMarkerList = array();
-    private $prefixList = array();
 }

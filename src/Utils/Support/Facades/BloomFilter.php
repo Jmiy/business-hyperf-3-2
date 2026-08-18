@@ -1,5 +1,15 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Support\Facades;
 
 use function Hyperf\Support\call;
@@ -14,8 +24,7 @@ class BloomFilter
     }
 
     /**
-     * 哈希函数1
-     * @param string $string
+     * 哈希函数1.
      * @param int $size 布隆过滤器空间大小
      * @return int
      */
@@ -23,7 +32,7 @@ class BloomFilter
     {
         $hash = 0;
         $len = strlen($string);
-        for ($i = 0; $i < $len; $i++) {
+        for ($i = 0; $i < $len; ++$i) {
             $hash = ($hash * 31 + ord($string[$i])) % $size;
         }
 
@@ -31,8 +40,7 @@ class BloomFilter
     }
 
     /**
-     * 哈希函数2
-     * @param string $string
+     * 哈希函数2.
      * @param int $size 布隆过滤器空间大小
      * @return int
      */
@@ -40,19 +48,18 @@ class BloomFilter
     {
         $hash = 5381;
         $len = strlen($string);
-        for ($i = 0; $i < $len; $i++) {
+        for ($i = 0; $i < $len; ++$i) {
             $hash = ($hash << 5) + $hash + ord($string[$i]);
         }
         return abs($hash % $size);
     }
 
     /**
-     * 哈希函数
-     * @param string $string
-     * @param int|null $size 布隆过滤器空间大小
+     * 哈希函数.
+     * @param null|int $size 布隆过滤器空间大小
      * @return float|int
      */
-    public static function hash(string $string, int|null $size = null)
+    public static function hash(string $string, ?int $size = null)
     {
         if ($size === null) {
             return crc32($string);
@@ -62,7 +69,7 @@ class BloomFilter
     }
 
     /**
-     * 布隆过滤器参数计算函数
+     * 布隆过滤器参数计算函数.
      * @param int $n 预期元素数量
      * @param float $p 可接受的误判率（0 < p < 1）
      * @return array
@@ -83,17 +90,17 @@ class BloomFilter
         $actual_p = pow(1 - exp(-$k * $n / $m), $k);
 
         return [
-            'm' => (int)$m,//计算的位数组大小
-            'k' => (int)$k,//最优哈希函数数量
-            'actual_p' => $actual_p,//实际误判率
-            'bits_per_item' => $m / $n,//每元素占用比特数
-            'n' => $n,//预期元素数量
-            'p' => $p,//可接受误判率
+            'm' => (int) $m, // 计算的位数组大小
+            'k' => (int) $k, // 最优哈希函数数量
+            'actual_p' => $actual_p, // 实际误判率
+            'bits_per_item' => $m / $n, // 每元素占用比特数
+            'n' => $n, // 预期元素数量
+            'p' => $p, // 可接受误判率
         ];
     }
 
     /**
-     * 生成k个哈希函数
+     * 生成k个哈希函数.
      * @param int $k 哈希函数数量
      * @return array 哈希函数数组
      */
@@ -105,22 +112,22 @@ class BloomFilter
         $fnv1a = function ($item) {
             $hash = 2166136261; // FNV偏移基础值
             $len = strlen($item);
-            for ($i = 0; $i < $len; $i++) {
+            for ($i = 0; $i < $len; ++$i) {
                 $hash ^= ord($item[$i]);
-                $hash = (int)($hash * 16777619);
+                $hash = (int) ($hash * 16777619);
             }
             return $hash;
         };
 
         // 基础哈希函数2：MurmurHash变体
         $murmur = function ($item) {
-            $seed = 0x3f6a2b4c; // 随机种子
+            $seed = 0x3F6A2B4C; // 随机种子
             $len = strlen($item);
             $hash = $seed ^ $len;
 
-            for ($i = 0; $i < $len; $i++) {
+            for ($i = 0; $i < $len; ++$i) {
                 $hash ^= ord($item[$i]) << (($i % 4) * 8);
-                $hash = (int)($hash * 0x5bd1e995);
+                $hash = (int) ($hash * 0x5BD1E995);
                 $hash ^= $hash >> 15;
             }
 
@@ -128,11 +135,11 @@ class BloomFilter
         };
 
         // 生成k个哈希函数
-        for ($i = 0; $i < $k; $i++) {
+        for ($i = 0; $i < $k; ++$i) {
             $hashFunctions[] = function ($item) use ($fnv1a, $murmur, $i) {
                 // 使用两个基础哈希函数组合生成多个哈希函数
                 $h1 = $fnv1a($item . $i);
-                $h2 = $murmur($item . ($i * 0x9e3779b9));
+                $h2 = $murmur($item . ($i * 0x9E3779B9));
                 return abs($h1 ^ $h2);
             };
         }
@@ -141,16 +148,9 @@ class BloomFilter
     }
 
     /**
-     * 添加元素到布隆过滤器
-     * @param string $key
-     * @param string $item
-     * @param int $k
-     * @param int|null $size
-     * @param int|null $seconds
-     * @param string $poolName
-     * @return void
+     * 添加元素到布隆过滤器.
      */
-    public static function add(string $key, string $item, int $k, ?int $size = 10000, int|null $seconds = null, string $poolName = 'default')
+    public static function add(string $key, string $item, int $k, ?int $size = 10000, ?int $seconds = null, string $poolName = 'default')
     {
         $hashFunctions = static::generateHashFunctions($k);
         foreach ($hashFunctions as $hashFn) {
@@ -162,7 +162,7 @@ class BloomFilter
     }
 
     /**
-     * 检查元素是否可能在布隆过滤器中
+     * 检查元素是否可能在布隆过滤器中.
      * @param string $item 要检查的元素
      * @return bool 如果可能存在返回true，否则返回false
      */
@@ -181,6 +181,4 @@ class BloomFilter
 
         return true;
     }
-
-
 }

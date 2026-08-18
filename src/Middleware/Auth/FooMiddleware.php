@@ -1,19 +1,25 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace Business\Hyperf\Middleware\Auth;
 
-use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
-
-use Hyperf\Di\Annotation\Inject;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 class FooMiddleware implements MiddlewareInterface
 {
@@ -34,14 +40,14 @@ class FooMiddleware implements MiddlewareInterface
      */
     protected $response;
 
-    public function __construct(ContainerInterface $container)//, HttpResponse $response, RequestInterface $request
+    public function __construct(ContainerInterface $container)// , HttpResponse $response, RequestInterface $request
     {
         $this->container = $container;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        //var_dump(__METHOD__);
+        // var_dump(__METHOD__);
 
         // 根据具体业务判断逻辑走向，这里假设用户携带的token有效
         $isValidToken = true;
@@ -57,7 +63,5 @@ class FooMiddleware implements MiddlewareInterface
                 ],
             ]
         );
-
-
     }
 }

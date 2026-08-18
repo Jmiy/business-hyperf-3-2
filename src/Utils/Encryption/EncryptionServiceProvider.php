@@ -1,17 +1,27 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Encryption;
 
-use function Hyperf\Support\make;
-use Hyperf\Stringable\Str;
-use function Hyperf\Tappable\tap;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Stringable\Str;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 
+use function Hyperf\Support\make;
+use function Hyperf\Tappable\tap;
+
 class EncryptionServiceProvider
 {
-
     // 实现一个 __invoke() 方法来完成对象的生产，方法参数会自动注入一个当前的容器实例
     public function __invoke(ContainerInterface $container)
     {
@@ -31,10 +41,9 @@ class EncryptionServiceProvider
     /**
      * Extract the encryption key from the given configuration.
      *
-     * @param array $config
      * @return string
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     protected function key(array $config)
     {

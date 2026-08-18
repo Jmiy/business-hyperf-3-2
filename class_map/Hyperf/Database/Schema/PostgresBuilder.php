@@ -1,5 +1,15 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Hyperf\Database\Schema;
 
 class PostgresBuilder extends Builder
@@ -7,24 +17,23 @@ class PostgresBuilder extends Builder
     /**
      * Determine if the given table exists.
      *
-     * @param  string  $table
+     * @param string $table
      * @return bool
      */
     public function hasTable($table)
     {
         [$schema, $table] = $this->parseSchemaAndTable($table);
 
-        $table = $this->connection->getTablePrefix().$table;
+        $table = $this->connection->getTablePrefix() . $table;
 
         return count($this->connection->select(
-            $this->grammar->compileTableExists(), [$schema, $table]
+            $this->grammar->compileTableExists(),
+            [$schema, $table]
         )) > 0;
     }
 
     /**
      * Drop all tables from the database.
-     *
-     * @return void
      */
     public function dropAllTables()
     {
@@ -53,8 +62,6 @@ class PostgresBuilder extends Builder
 
     /**
      * Drop all views from the database.
-     *
-     * @return void
      */
     public function dropAllViews()
     {
@@ -98,6 +105,26 @@ class PostgresBuilder extends Builder
     }
 
     /**
+     * Get the column listing for a given table.
+     *
+     * @param string $table
+     * @return array
+     */
+    public function getColumnListing($table)
+    {
+        [$schema, $table] = $this->parseSchemaAndTable($table);
+
+        $table = $this->connection->getTablePrefix() . $table;
+
+        $results = $this->connection->select(
+            $this->grammar->compileColumnListing(),
+            [$schema, $table]
+        );
+
+        return $this->connection->getPostProcessor()->processColumnListing($results);
+    }
+
+    /**
      * Get all of the table names for the database.
      *
      * @return array
@@ -134,28 +161,9 @@ class PostgresBuilder extends Builder
     }
 
     /**
-     * Get the column listing for a given table.
-     *
-     * @param  string  $table
-     * @return array
-     */
-    public function getColumnListing($table)
-    {
-        [$schema, $table] = $this->parseSchemaAndTable($table);
-
-        $table = $this->connection->getTablePrefix().$table;
-
-        $results = $this->connection->select(
-            $this->grammar->compileColumnListing(), [$schema, $table]
-        );
-
-        return $this->connection->getPostProcessor()->processColumnListing($results);
-    }
-
-    /**
      * Parse the table name and extract the schema and table.
      *
-     * @param  string  $table
+     * @param string $table
      * @return array
      */
     protected function parseSchemaAndTable($table)

@@ -14,9 +14,8 @@ namespace Business\Hyperf\Rpc\JsonRpc\Contracts;
 
 interface CalculatorServiceInterface
 {
-
     public function add(int $a, int $b);
-    //public function add(int $a, int $b): int;
+    // public function add(int $a, int $b): int;
 
-    //public function sum(MathValue $v1, MathValue $v2): MathValue;
+    // public function sum(MathValue $v1, MathValue $v2): MathValue;
 }

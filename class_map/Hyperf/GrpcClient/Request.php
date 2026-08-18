@@ -46,9 +46,9 @@ class Request extends BaseRequest
                 'content-type' => self::DEFAULT_CONTENT_TYPE,
                 'te' => 'trailers',
                 'user-agent' => $this->buildDefaultUserAgent(),
-            ]
+            ],
         ]);
-        if (!array_key_exists(Constant::RPC_PROTOCOL_KEY, $headers)) {
+        if (! array_key_exists(Constant::RPC_PROTOCOL_KEY, $headers)) {
             $headers[Constant::RPC_PROTOCOL_KEY] = Constant::JSON_RPC_HTTP_PROTOCOL;
         }
         return $headers;

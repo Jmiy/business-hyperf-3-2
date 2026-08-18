@@ -12,21 +12,21 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Rpc\Exception;
 
+use RuntimeException;
 use Throwable;
 
-class ServiceException extends \RuntimeException
+class ServiceException extends RuntimeException
 {
     private array $context = [];
 
-    public function __construct(array $context, string $message, int $code = 0, Throwable|null $previous = null)
+    public function __construct(array $context, string $message, int $code = 0, ?Throwable $previous = null)
     {
         $this->setContext($context);
         parent::__construct($message, $code, $previous);
     }
 
     /**
-     * 获取上下文
-     * @return array
+     * 获取上下文.
      */
     public function getContext(): array
     {
@@ -34,8 +34,7 @@ class ServiceException extends \RuntimeException
     }
 
     /**
-     * 设置上下文
-     * @param array $context
+     * 设置上下文.
      * @return $this
      */
     public function setContext(array $context): static

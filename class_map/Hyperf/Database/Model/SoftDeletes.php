@@ -12,9 +12,10 @@ declare(strict_types=1);
 
 namespace Hyperf\Database\Model;
 
-use function Hyperf\Tappable\tap;
 use Hyperf\DbConnection\Db;
 use Psr\EventDispatcher\StoppableEventInterface;
+
+use function Hyperf\Tappable\tap;
 
 /**
  * @method static static|\Hyperf\Database\Model\Builder|\Hyperf\Database\Query\Builder withTrashed(bool $withTrashed = true)
@@ -56,6 +57,7 @@ trait SoftDeletes
 
     /**
      * Get the format for database stored dates.
+     * @param null|mixed $dateFormat
      */
     public function getDateTimeFormat($dateFormat = null): string
     {
@@ -65,6 +67,7 @@ trait SoftDeletes
     /**
      * Convert a DateTime to a storable string.
      *
+     * @param null|mixed $dateFormat
      * @return null|string
      */
     public function getDateTime(mixed $value, $dateFormat = null): mixed
@@ -90,7 +93,7 @@ trait SoftDeletes
             }
         }
 
-        //更新还原时间
+        // 更新还原时间
         $time = $this->freshTimestamp();
         if ($this->getDeletedTimeColumn()) {
             $this->{$this->getDeletedTimeColumn()} = $this->getDateTime($time, static::DELETED_AT_DATE_FORMAT);
@@ -154,10 +157,9 @@ trait SoftDeletes
 
     /**
      * Get the fully qualified "deleted at" column.
-     * @param \Hyperf\Database\Model\Builder|null $builder
      * @return string
      */
-    public function getQualifiedDeletedAtColumn(Builder|null $builder = null)
+    public function getQualifiedDeletedAtColumn(?Builder $builder = null)
     {
         $column = $this->getDeletedAtColumn();
 
@@ -198,18 +200,17 @@ trait SoftDeletes
 
         $columns = [];
         if ($this->getDeletedAtColumn()) {
-            $columns[$this->getDeletedAtColumn()] = Db::raw($this->getKeyName());//设置为无效
-            $this->{$this->getDeletedAtColumn()} = $this->getKey();//设置为无效
+            $columns[$this->getDeletedAtColumn()] = Db::raw($this->getKeyName()); // 设置为无效
+            $this->{$this->getDeletedAtColumn()} = $this->getKey(); // 设置为无效
         }
 
-        //更新删除时间
+        // 更新删除时间
         if ($this->getDeletedTimeColumn()) {
             $columns[$this->getDeletedTimeColumn()] = $this->getDateTime($time, static::DELETED_AT_DATE_FORMAT);
             $this->{$this->getDeletedTimeColumn()} = $this->getDateTime($time, static::DELETED_AT_DATE_FORMAT);
         }
 
-
-        if ($this->timestamps && !is_null($this->getUpdatedAtColumn())) {
+        if ($this->timestamps && ! is_null($this->getUpdatedAtColumn())) {
             $this->{$this->getUpdatedAtColumn()} = $time;
             $columns[$this->getUpdatedAtColumn()] = $this->fromDateTime($time);
         }

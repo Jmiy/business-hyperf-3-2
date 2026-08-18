@@ -12,9 +12,6 @@ declare(strict_types=1);
 
 namespace Hyperf\RateLimit\Aspect;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Config\config;
-use function Hyperf\Tappable\tap;
 use bandwidthThrottle\tokenBucket\storage\StorageException;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Di\Aop\AroundInterface;
@@ -24,6 +21,10 @@ use Hyperf\RateLimit\Annotation\RateLimit;
 use Hyperf\RateLimit\Exception\RateLimitException;
 use Hyperf\RateLimit\Handler\RateLimitHandler;
 use Swoole\Coroutine;
+
+use function Hyperf\Collection\data_get;
+use function Hyperf\Config\config;
+use function Hyperf\Tappable\tap;
 
 class RateLimitAnnotationAspect implements AroundInterface
 {
@@ -55,7 +56,7 @@ class RateLimitAnnotationAspect implements AroundInterface
         if (is_callable($bucketKey)) {
             $bucketKey = $bucketKey($proceedingJoinPoint);
         }
-        if (!$bucketKey) {
+        if (! $bucketKey) {
             $bucketKey = $this->request->getUri()->getPath();
         }
 
@@ -77,7 +78,7 @@ class RateLimitAnnotationAspect implements AroundInterface
             Coroutine::sleep(max($seconds, 0.001));
         }
 
-        if (!$annotation->limitCallback || !is_callable($annotation->limitCallback)) {
+        if (! $annotation->limitCallback || ! is_callable($annotation->limitCallback)) {
             throw new RateLimitException('Service Unavailable Rate Limit.', 503);
         }
         return call_user_func($annotation->limitCallback, $seconds, $proceedingJoinPoint);
@@ -91,13 +92,13 @@ class RateLimitAnnotationAspect implements AroundInterface
         $property = array_merge($this->annotationProperty, $this->config);
         /** @var null|RateLimit $annotation */
         foreach ($annotations as $annotation) {
-            if (!$annotation) {
+            if (! $annotation) {
                 continue;
             }
             $property = array_merge($property, array_filter(get_object_vars($annotation)));
         }
 
-        $rateLimitConfig = data_get($proceedingJoinPoint->arguments, 'keys.extendData.rate_limit');
+        $rateLimitConfig = data_get($proceedingJoinPoint->arguments, ['keys', 'extendData', 'rate_limit']);
         if ($rateLimitConfig !== null) {
             $rateLimitConfig = is_array($rateLimitConfig) ? $rateLimitConfig : config($rateLimitConfig);
             if ($rateLimitConfig) {

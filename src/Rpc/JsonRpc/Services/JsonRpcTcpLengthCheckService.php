@@ -19,7 +19,7 @@ use Hyperf\RpcServer\Annotation\RpcService;
  * 注意，如希望通过服务中心来管理服务，需在注解内增加 publishTo 属性 protocol="jsonrpc-http", server="jsonrpc-http", publishTo="consul"
  * protocol：目前仅支持 jsonrpc 和 jsonrpc-http 协议发布到服务中心去，其它协议尚未实现服务注册.
  */
-//#[RpcService(name: 'JsonRpcTcpLengthCheckService', server: 'jsonrpc-tcp-length-check-server', protocol: 'jsonrpc-tcp-length-check', publishTo: 'nacos')]
+// #[RpcService(name: 'JsonRpcTcpLengthCheckService', server: 'jsonrpc-tcp-length-check-server', protocol: 'jsonrpc-tcp-length-check', publishTo: 'nacos')]
 class JsonRpcTcpLengthCheckService
 {
     // 实现一个加法方法，这里简单的认为参数都是 int 类型
@@ -37,4 +37,3 @@ class JsonRpcTcpLengthCheckService
     //        return func_get_args();
     //    }
 }
-

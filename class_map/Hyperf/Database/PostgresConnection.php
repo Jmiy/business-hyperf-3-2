@@ -1,36 +1,36 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Hyperf\Database;
 
-use Hyperf\Stringable\Str;
-use Hyperf\Database\Exception\QueryException;
-use Hyperf\Database\Schema\PostgresBuilder;
-
-use Doctrine\DBAL\Driver\PDOPgSql\Driver as DoctrineDriver;
-use Hyperf\Database\Query\Processors\PostgresProcessor;
-use Hyperf\Database\Query\Grammars\PostgresGrammar as QueryGrammar;
-use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
-
 use Closure;
-use Swoole\Coroutine\PostgreSQL;
+use Doctrine\DBAL\Driver\PDOPgSql\Driver;
+use Doctrine\DBAL\Driver\PDOPgSql\Driver as DoctrineDriver;
+use Hyperf\Database\Query\Grammars\PostgresGrammar;
+use Hyperf\Database\Query\Grammars\PostgresGrammar as QueryGrammar;
+use Hyperf\Database\Query\Processors\PostgresProcessor;
+use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
+use Hyperf\Database\Schema\PostgresBuilder;
+use Hyperf\Stringable\Str;
 use OutOfBoundsException;
+use Swoole\Coroutine\PostgreSQL;
+use Throwable;
 
 class PostgresConnection extends Connection
 {
     /**
-     * Get the default query grammar instance.
-     *
-     * @return \Hyperf\Database\Query\Grammars\PostgresGrammar
-     */
-    protected function getDefaultQueryGrammar()
-    {
-        return $this->withTablePrefix(new QueryGrammar);
-    }
-
-    /**
      * Get a schema builder instance for the connection.
      *
-     * @return \Hyperf\Database\Schema\PostgresBuilder
+     * @return PostgresBuilder
      */
     public function getSchemaBuilder()
     {
@@ -39,36 +39,6 @@ class PostgresConnection extends Connection
         }
 
         return new PostgresBuilder($this);
-    }
-
-    /**
-     * Get the default schema grammar instance.
-     *
-     * @return \Hyperf\Database\Schema\Grammars\PostgresGrammar
-     */
-    protected function getDefaultSchemaGrammar()
-    {
-        return $this->withTablePrefix(new SchemaGrammar);
-    }
-
-    /**
-     * Get the default post processor instance.
-     *
-     * @return \Hyperf\Database\Query\Processors\PostgresProcessor
-     */
-    protected function getDefaultPostProcessor()
-    {
-        return new PostgresProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Doctrine\DBAL\Driver\PDOPgSql\Driver
-     */
-    protected function getDoctrineDriver()
-    {
-        return new DoctrineDriver;
     }
 
     /**
@@ -110,7 +80,7 @@ class PostgresConnection extends Connection
     /**
      * Set the PDO connection.
      *
-     * @param null|\Closure|PostgreSQL $pdo
+     * @param null|Closure|PostgreSQL $pdo
      * @return $this
      */
     public function setPdo($pdo)
@@ -125,7 +95,7 @@ class PostgresConnection extends Connection
     /**
      * Set the PDO connection used for reading.
      *
-     * @param null|\Closure|PostgreSQL $pdo
+     * @param null|Closure|PostgreSQL $pdo
      * @return $this
      */
     public function setReadPdo($pdo)
@@ -136,51 +106,38 @@ class PostgresConnection extends Connection
     }
 
     /**
-     * Get the PostgreSQL connection to use for a select query.
-     *
-     * @param bool $useReadPdo
-     * @return PostgreSQL
-     */
-    protected function getPdoForSelect($useReadPdo = true)
-    {
-        return $useReadPdo ? $this->getReadPdo() : $this->getPdo();
-    }
-
-    /**
-     * 获取 Statement Key
+     * 获取 Statement Key.
      * @return string
      */
     public function getStatementKey()
     {
-        return __METHOD__ . md5(uniqid(mt_rand().'', true)) . microtime(true) . mt_rand();
+        return __METHOD__ . md5(uniqid(mt_rand() . '', true)) . microtime(true) . mt_rand();
     }
 
-    public function handleQuerySql(string $query, array $bindings = []) {
-
-        if(empty($bindings)){
+    public function handleQuerySql(string $query, array $bindings = [])
+    {
+        if (empty($bindings)) {
             return $query;
         }
 
         $search = $this->getQueryGrammar()->parameter('');
         foreach ($bindings as $key => $value) {
             $replace = '$' . ($key + 1);
-            $query = Str::replaceFirst($search, (string)$replace, $query);
+            $query = Str::replaceFirst($search, (string) $replace, $query);
         }
 
         return $query;
     }
 
     /**
-     * 抛出异常
-     * @param PostgreSQL $connection
-     * @param string $msg
+     * 抛出异常.
      * @param array $code
      */
     public function throwException(PostgreSQL $connection, string $msg = '', $code = 0)
     {
-        $error = (string)$connection->error;
-        if ($error) {//如果有错误，就抛出异常
-            throw new OutOfBoundsException(((string)$connection->error) . ($msg ? ('===>' . $msg) : $msg), $code);
+        $error = (string) $connection->error;
+        if ($error) {// 如果有错误，就抛出异常
+            throw new OutOfBoundsException(((string) $connection->error) . ($msg ? ('===>' . $msg) : $msg), $code);
         }
     }
 
@@ -203,14 +160,14 @@ class PostgresConnection extends Connection
             $key = $this->getStatementKey();
 
             $prepareResult = $connection->prepare($key, $query);
-            $this->throwException($connection, __CLASS__.'::select-----prepare----exception', 1);
+            $this->throwException($connection, __CLASS__ . '::select-----prepare----exception', 1);
             if ($prepareResult === false) {
                 return [];
             }
 
             $resource = $connection->execute($key, $this->prepareBindings($bindings));
-            $this->throwException($connection, __CLASS__.'::select-----execute----exception', 2);
-            if (empty($resource)) {//如果查询结果为空，就直接返回空数组
+            $this->throwException($connection, __CLASS__ . '::select-----execute----exception', 2);
+            if (empty($resource)) {// 如果查询结果为空，就直接返回空数组
                 return [];
             }
 
@@ -236,7 +193,7 @@ class PostgresConnection extends Connection
             $connection = $this->getPdo();
             $prepareResult = $connection->prepare($key, $query);
 
-            $this->throwException($connection, __CLASS__.'::statement-----prepare----exception', 3);
+            $this->throwException($connection, __CLASS__ . '::statement-----prepare----exception', 3);
 
             if ($prepareResult === false) {
                 return $prepareResult;
@@ -246,7 +203,7 @@ class PostgresConnection extends Connection
 
             $connection->execute($key, $this->prepareBindings($bindings));
 
-            $this->throwException($connection, __CLASS__.'::statement-----execute----exception', 5);
+            $this->throwException($connection, __CLASS__ . '::statement-----execute----exception', 5);
 
             return true;
         });
@@ -271,14 +228,14 @@ class PostgresConnection extends Connection
             $key = $this->getStatementKey();
             $connection = $this->getPdo();
             $prepareResult = $connection->prepare($key, $query);
-            $this->throwException($connection, __CLASS__.'::affectingStatement-----prepare----exception', 6);
+            $this->throwException($connection, __CLASS__ . '::affectingStatement-----prepare----exception', 6);
             if ($prepareResult === false) {
                 return $count;
             }
 
             $result = $connection->execute($key, $this->prepareBindings($bindings));
 
-            $this->throwException($connection, __CLASS__.'::affectingStatement-----execute----exception', 7);
+            $this->throwException($connection, __CLASS__ . '::affectingStatement-----execute----exception', 7);
 
             if ($result === false) {
                 return $count;
@@ -290,6 +247,71 @@ class PostgresConnection extends Connection
 
             return $count;
         });
+    }
+
+    /**
+     * Commit the active database transaction.
+     */
+    public function commit(): void
+    {
+        if ($this->transactions == 1) {
+            $this->getPdo()->query('COMMIT');
+        }
+
+        $this->transactions = max(0, $this->transactions - 1);
+
+        $this->fireConnectionEvent('committed');
+    }
+
+    /**
+     * Get the default query grammar instance.
+     *
+     * @return PostgresGrammar
+     */
+    protected function getDefaultQueryGrammar()
+    {
+        return $this->withTablePrefix(new QueryGrammar());
+    }
+
+    /**
+     * Get the default schema grammar instance.
+     *
+     * @return SchemaGrammar
+     */
+    protected function getDefaultSchemaGrammar()
+    {
+        return $this->withTablePrefix(new SchemaGrammar());
+    }
+
+    /**
+     * Get the default post processor instance.
+     *
+     * @return PostgresProcessor
+     */
+    protected function getDefaultPostProcessor()
+    {
+        return new PostgresProcessor();
+    }
+
+    /**
+     * Get the Doctrine DBAL driver.
+     *
+     * @return Driver
+     */
+    protected function getDoctrineDriver()
+    {
+        return new DoctrineDriver();
+    }
+
+    /**
+     * Get the PostgreSQL connection to use for a select query.
+     *
+     * @param bool $useReadPdo
+     * @return PostgreSQL
+     */
+    protected function getPdoForSelect($useReadPdo = true)
+    {
+        return $useReadPdo ? $this->getReadPdo() : $this->getPdo();
     }
 
     /**
@@ -323,7 +345,7 @@ class PostgresConnection extends Connection
     /**
      * Handle an exception from a transaction beginning.
      *
-     * @param \Throwable $e
+     * @param Throwable $e
      *
      * @throws \Exception
      */
@@ -336,20 +358,6 @@ class PostgresConnection extends Connection
         } else {
             throw $e;
         }
-    }
-
-    /**
-     * Commit the active database transaction.
-     */
-    public function commit(): void
-    {
-        if ($this->transactions == 1) {
-            $this->getPdo()->query('COMMIT');
-        }
-
-        $this->transactions = max(0, $this->transactions - 1);
-
-        $this->fireConnectionEvent('committed');
     }
 
     /**

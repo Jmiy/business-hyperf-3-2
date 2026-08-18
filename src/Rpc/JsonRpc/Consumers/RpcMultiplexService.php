@@ -49,22 +49,22 @@ class RpcMultiplexService extends BaseConsumer
     public static function getRpcContext()
     {
         //        $serviceName = config('app_name');
-//        $context = [
-//            BusinessConstant::RPC_TOKEN_KEY => config('authorization.' . $serviceName . '.' . BusinessConstant::RPC_TOKEN_KEY),
-//            'x-jmiy-service' => $serviceName,
-//        ];
+        //        $context = [
+        //            BusinessConstant::RPC_TOKEN_KEY => config('authorization.' . $serviceName . '.' . BusinessConstant::RPC_TOKEN_KEY),
+        //            'x-jmiy-service' => $serviceName,
+        //        ];
 
-        //ip限制的场景
-//        $context = [
-//            BusinessConstant::RPC_TOKEN_KEY => config('authorization.' . $serviceName . '.' . BusinessConstant::RPC_TOKEN_KEY),
-//            'x-jmiy-service' => 'product-listing',
-//        ];
+        // ip限制的场景
+        //        $context = [
+        //            BusinessConstant::RPC_TOKEN_KEY => config('authorization.' . $serviceName . '.' . BusinessConstant::RPC_TOKEN_KEY),
+        //            'x-jmiy-service' => 'product-listing',
+        //        ];
 
-        //签名认证的场景
-//        $context = [
-//            BusinessConstant::RPC_TOKEN_KEY => config('authorization.product-listing.' . BusinessConstant::RPC_TOKEN_KEY),
-//            'x-jmiy-service' => $serviceName,
-//        ];
+        // 签名认证的场景
+        //        $context = [
+        //            BusinessConstant::RPC_TOKEN_KEY => config('authorization.product-listing.' . BusinessConstant::RPC_TOKEN_KEY),
+        //            'x-jmiy-service' => $serviceName,
+        //        ];
 
         $context = [];
         //        $serviceName = config('app_name');
@@ -78,5 +78,3 @@ class RpcMultiplexService extends BaseConsumer
         return Arr::collapse([$_context, $context]);
     }
 }
-
-

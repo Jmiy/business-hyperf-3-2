@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Hyperf\ServiceGovernance\Listener;
 
 use Exception;
@@ -64,16 +65,15 @@ class RegisterServiceListener implements ListenerInterface
             return;
         }
 
-//        server=jsonrpc-http
-//        className=App\Service\Provider\Email\EmailService
-//        protocol=jsonrpc-http
-//        publishTo=nacos
+        //        server=jsonrpc-http
+        //        className=App\Service\Provider\Email\EmailService
+        //        protocol=jsonrpc-http
+        //        publishTo=nacos
 
         $attempts = 10;
         while ($attempts > 0) {
             try {
-
-                $tryNum=0;
+                $tryNum = 0;
                 beginning:
 
                 $services = $this->serviceManager->all();
@@ -85,10 +85,9 @@ class RegisterServiceListener implements ListenerInterface
                                 continue;
                             }
 
-//                            var_dump(__METHOD__, $service);
+                            //                            var_dump(__METHOD__, $service);
                             if (! isset($service['className']) || empty($service['className'])) {
                                 if ($tryNum < 5) {
-
                                     Coroutine::sleep(1);
 
                                     $tryNum = $tryNum + 1;

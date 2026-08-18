@@ -9,10 +9,11 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+
 namespace Business\Hyperf\Kernel\Visitor;
 
-use Hyperf\Stringable\Str;
 use Hyperf\Database\Commands\Ast\ModelUpdateVisitor as Visitor;
+use Hyperf\Stringable\Str;
 
 class ModelUpdateVisitor extends Visitor
 {

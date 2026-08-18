@@ -1,38 +1,60 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Support\Facades;
 
-use function Hyperf\Support\make;
-use Hyperf\Collection\Arr;
 use GuzzleHttp\Client;
+use Hyperf\Collection\Arr;
 use Hyperf\Guzzle\RetryMiddleware;
+use RuntimeException;
+
+use function Hyperf\Support\make;
 
 class HttpClient
 {
-
-    static $pool = [];
+    public static $pool = [];
 
     /**
-     * 获取http client
-     * @param array|null $config GuzzleHttp\Client配置
-     * @param array|null $poolHandlerOption 连接池(Hyperf\Guzzle\PoolHandler) 配置
-     * @param array|array[]|null $handlerStackMiddlewares 重试中间件，默认：每隔10秒重试一次，重试2次
-     * @return Client
+     * Handle dynamic, static calls to the object.
+     *
+     * @param string $method
+     * @param array $args
+     * @return mixed
+     *
+     * @throws RuntimeException
+     */
+    public static function __callStatic($method, $args)
+    {
+        return static::getClient()->{$method}(...$args);
+    }
+
+    /**
+     * 获取http client.
+     * @param null|array $config GuzzleHttp\Client配置
+     * @param null|array $poolHandlerOption 连接池(Hyperf\Guzzle\PoolHandler) 配置
+     * @param null|array|array[] $handlerStackMiddlewares 重试中间件，默认：每隔10秒重试一次，重试2次
      */
     public static function getClient(
         ?array $config = [],
-        ?array $poolHandlerOption=[
+        ?array $poolHandlerOption = [
             'min_connections' => 1,
             'max_connections' => 30,
             'wait_timeout' => 3.0,
             'max_idle_time' => 60,
         ],
-        ?array $handlerStackMiddlewares=[
+        ?array $handlerStackMiddlewares = [
             'retry' => [RetryMiddleware::class, [1, 10]],
         ]
-    ): Client
-    {
-
+    ): Client {
         $name = md5(serialize(func_get_args()));
         if (isset(static::$pool[$name]) && static::$pool[$name]) {
             return static::$pool[$name];
@@ -45,32 +67,18 @@ class HttpClient
                     [
                         [
                             'pool_handler' => [
-                                'option' => $poolHandlerOption
+                                'option' => $poolHandlerOption,
                             ],
                             'handler_stack' => [
-                                'middlewares' => $handlerStackMiddlewares
+                                'middlewares' => $handlerStackMiddlewares,
                             ],
                         ],
-                        $config
+                        $config,
                     ]
-                )
+                ),
             ]
         );
 
         return static::$pool[$name];
-    }
-
-    /**
-     * Handle dynamic, static calls to the object.
-     *
-     * @param string $method
-     * @param array $args
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    public static function __callStatic($method, $args)
-    {
-        return static::getClient()->{$method}(...$args);
     }
 }

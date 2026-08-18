@@ -14,21 +14,16 @@ namespace Business\Hyperf\Kernel\Codec;
 
 use Hyperf\Contract\Arrayable;
 use Hyperf\Contract\Jsonable;
-use Throwable;
 
 class Json
 {
     /**
      * 编码
-     * @param mixed $data
-     * @param int $flags
-     * @param int $depth
-     * @return string|false
      */
-    public static function encode(mixed $data, int $flags = JSON_UNESCAPED_UNICODE, int $depth = 512): string|false
+    public static function encode(mixed $data, int $flags = JSON_UNESCAPED_UNICODE, int $depth = 512): false|string
     {
         if ($data instanceof Jsonable) {
-            return (string)$data;
+            return (string) $data;
         }
 
         if ($data instanceof Arrayable) {
@@ -40,16 +35,11 @@ class Json
 
     /**
      * 解码
-     * @param string $json
-     * @param bool|null $associative
-     * @param int $depth
-     * @param int $flags
-     * @return mixed
      */
     public static function decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0): mixed
     {
         if (function_exists('json_validate')) {
-            if (!json_validate($json)) {
+            if (! json_validate($json)) {
                 return null;
             }
         }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 /**
- * AOP 面向切面编程
+ * This file is part of Hyperf.
  *
- * @link     https://www.hyperf.wiki/3.0/#/zh-cn/aop
+ * @link     https://www.hyperf.io
  * @document https://hyperf.wiki
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
@@ -12,32 +12,30 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Aspect;
 
-use function Hyperf\Support\call;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Closure;
+use Business\Hyperf\Annotation\Service as AnnotationService;
 use Business\Hyperf\Constants\Constant;
+use Closure;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
-use Hyperf\Utils\Arr;
-use Business\Hyperf\Annotation\Service AS AnnotationService;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Support\call;
 
 #[Aspect(classes: [], annotations: [AnnotationService::class])]
 class Service extends AbstractAspect
 {
-
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
-
-//        //$proceedingJoinPoint->getAnnotationMetadata(),
-//        //$proceedingJoinPoint->processOriginalMethod(),
-//        $model = $proceedingJoinPoint->getInstance();
-//        //$model->getTable(),$model->getConnectionName(),
-//        //$model->getTable(),$model->getConnectionName(),
-//        //$proceedingJoinPoint->getReflectMethod(),
-//        //$proceedingJoinPoint->processOriginalMethod(),$proceedingJoinPoint->result,
-//        //$proceedingJoinPoint->processOriginalMethod(),
-//        var_dump($proceedingJoinPoint->className, $proceedingJoinPoint->methodName, $proceedingJoinPoint->getArguments());//
+        //        //$proceedingJoinPoint->getAnnotationMetadata(),
+        //        //$proceedingJoinPoint->processOriginalMethod(),
+        //        $model = $proceedingJoinPoint->getInstance();
+        //        //$model->getTable(),$model->getConnectionName(),
+        //        //$model->getTable(),$model->getConnectionName(),
+        //        //$proceedingJoinPoint->getReflectMethod(),
+        //        //$proceedingJoinPoint->processOriginalMethod(),$proceedingJoinPoint->result,
+        //        //$proceedingJoinPoint->processOriginalMethod(),
+        //        var_dump($proceedingJoinPoint->className, $proceedingJoinPoint->methodName, $proceedingJoinPoint->getArguments());//
 
         $arguments = $proceedingJoinPoint->getArguments();
         $methodName = 'aspect';
@@ -53,7 +51,7 @@ class Service extends AbstractAspect
                 if ($handData instanceof Closure) {
                     $rs = call($handData, [$proceedingJoinPoint]);
                 } else {
-                    $rs = call([data_get($handData, Constant::SERVICE, ''), data_get($handData, Constant::METHOD, '')], data_get($handData, Constant::PARAMETERS, []));//兼容各种调用
+                    $rs = call([data_get($handData, Constant::SERVICE, ''), data_get($handData, Constant::METHOD, '')], data_get($handData, Constant::PARAMETERS, [])); // 兼容各种调用
                 }
 
                 if (empty($rs)) {
@@ -70,13 +68,12 @@ class Service extends AbstractAspect
         // 在调用后进行某些处理
         $after = data_get($aspectData, 'after', []);
         if ($after) {
-
             $rs = false;
             foreach ($after as $handData) {
                 if ($handData instanceof Closure) {
                     $rs = call($handData, [$proceedingJoinPoint, $result]);
                 } else {
-                    $rs = call([data_get($handData, Constant::SERVICE, ''), data_get($handData, Constant::METHOD, '')], data_get($handData, Constant::PARAMETERS, []));//兼容各种调用
+                    $rs = call([data_get($handData, Constant::SERVICE, ''), data_get($handData, Constant::METHOD, '')], data_get($handData, Constant::PARAMETERS, [])); // 兼容各种调用
                 }
                 if (empty($rs)) {
                     break;

@@ -1,54 +1,53 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace Business\Hyperf;
 
-//use Business\Hyperf\Process\RestartServiceProcess;
-use Business\Hyperf\Utils\Redis\Lua\LuaFactory;
+// use Business\Hyperf\Process\RestartServiceProcess;
 use Business\Hyperf\Utils\Redis\Lua\Contracts\LuaInterface;
-use Hyperf\Database\Schema\PostgresBuilder;
-use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
-use Hyperf\Database\Query\Processors\PostgresProcessor;
-use Hyperf\Database\Query\Grammars\PostgresGrammar;
-use Hyperf\Database\PostgresConnection;
-use Hyperf\Database\Connectors\PostgresConnector;
-use Hyperf\Database\Model\SoftDeletes;
-use Hyperf\Database\Model\SoftDeletingScope;
-use Hyperf\Database\Model\Relations\HasManyThrough;
-
+use Business\Hyperf\Utils\Redis\Lua\LuaFactory;
 use GuzzleHttp\Client;
-
+// use Hyperf\AsyncQueue\Driver\Driver;
+use Hyperf\AsyncQueue\Driver\RedisDriver as AsyncQueueRedisDriver;
 use Hyperf\Cache\Driver\RedisDriver;
 use Hyperf\Cache\Helper\StringHelper;
-
-//use Hyperf\AsyncQueue\Driver\Driver;
-use Hyperf\RateLimit\Aspect\RateLimitAnnotationAspect;
-
 use Hyperf\ConfigCenter\AbstractDriver;
-use Hyperf\Nacos\Config;
-use Hyperf\ConfigNacos\NacosClient as ConfigNacosClient;
 use Hyperf\ConfigNacos\Client as ConfigClient;
+use Hyperf\ConfigNacos\NacosClient as ConfigNacosClient;
 use Hyperf\ConfigNacos\NacosDriver as ConfigNacosDriver;
-
-use Hyperf\ServiceGovernanceNacos\NacosDriver;
-use Hyperf\ServiceGovernanceNacos\Client as ServiceGovernanceNacosClient;
-
-use Hyperf\JsonRpc\JsonRpcHttpTransporter;
+use Hyperf\Coroutine\Concurrent;
+use Hyperf\Database\Connectors\PostgresConnector;
+use Hyperf\Database\Model\Relations\HasManyThrough;
+use Hyperf\Database\Model\SoftDeletes;
+use Hyperf\Database\Model\SoftDeletingScope;
+use Hyperf\Database\PostgresConnection;
+use Hyperf\Database\Query\Grammars\PostgresGrammar;
+use Hyperf\Database\Query\Processors\PostgresProcessor;
+use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
+use Hyperf\Database\Schema\PostgresBuilder;
+use Hyperf\Engine\Signal;
 use Hyperf\Grpc\PathGenerator;
 use Hyperf\GrpcClient\Request;
 use Hyperf\GrpcServer\Exception\Handler\GrpcExceptionHandler;
-use Hyperf\ServiceGovernance\Listener\RegisterServiceListener;
-
+use Hyperf\JsonRpc\JsonRpcHttpTransporter;
+use Hyperf\Nacos\Config;
+use Hyperf\RateLimit\Aspect\RateLimitAnnotationAspect;
 use Hyperf\Redis\Pool\RedisPool;
-use Hyperf\Coroutine\Concurrent as CoroutineConcurrent;
-
+use Hyperf\ServiceGovernance\Listener\RegisterServiceListener;
+use Hyperf\ServiceGovernanceNacos\Client as ServiceGovernanceNacosClient;
+use Hyperf\ServiceGovernanceNacos\NacosDriver;
 use OSS\Model\ObjectVersionListInfo;
 use OSS\Signer\SignerV1;
 use OSS\Signer\SignerV4;
-use Hyperf\AsyncQueue\Driver\RedisDriver as AsyncQueueRedisDriver;
-
-use Hyperf\Engine\Signal;
 
 class ConfigProvider
 {
@@ -57,11 +56,11 @@ class ConfigProvider
         return [
             'dependencies' => [
                 LuaInterface::class => LuaFactory::class,
-                //EncrypterInterface::class => EncrypterFactory::class,
-//                'db.connector.pgsql' => PostgresConnector::class,
+                // EncrypterInterface::class => EncrypterFactory::class,
+                // 'db.connector.pgsql' => PostgresConnector::class,
             ],
             'processes' => [
-                //RestartServiceProcess::class,
+                // RestartServiceProcess::class,
             ],
             'annotations' => [
                 'scan' => [
@@ -70,12 +69,12 @@ class ConfigProvider
                     ],
                     'class_map' => [
                         // 需要映射的类名 => 类所在的文件地址
-//                        PostgresBuilder::class => __DIR__ . '/../class_map/Hyperf/Database/Schema/PostgresBuilder.php',
-//                        SchemaGrammar::class => __DIR__ . '/../class_map/Hyperf/Database/Schema/PostgresGrammar.php',
-//                        PostgresProcessor::class => __DIR__ . '/../class_map/Hyperf/Database/Query/Processors/PostgresProcessor.php',
-//                        PostgresGrammar::class => __DIR__ . '/../class_map/Hyperf/Database/Query/Grammars/PostgresGrammar.php',
-//                        PostgresConnection::class => __DIR__ . '/../class_map/Hyperf/Database/PostgresConnection.php',
-//                        PostgresConnector::class => __DIR__ . '/../class_map/Hyperf/Database/Connectors/PostgresConnector.php',
+                        //                        PostgresBuilder::class => __DIR__ . '/../class_map/Hyperf/Database/Schema/PostgresBuilder.php',
+                        //                        SchemaGrammar::class => __DIR__ . '/../class_map/Hyperf/Database/Schema/PostgresGrammar.php',
+                        //                        PostgresProcessor::class => __DIR__ . '/../class_map/Hyperf/Database/Query/Processors/PostgresProcessor.php',
+                        //                        PostgresGrammar::class => __DIR__ . '/../class_map/Hyperf/Database/Query/Grammars/PostgresGrammar.php',
+                        //                        PostgresConnection::class => __DIR__ . '/../class_map/Hyperf/Database/PostgresConnection.php',
+                        //                        PostgresConnector::class => __DIR__ . '/../class_map/Hyperf/Database/Connectors/PostgresConnector.php',
 
                         // 需要映射的类名 => 类所在的文件地址
                         SoftDeletes::class => __DIR__ . '/../class_map/Hyperf/Database/Model/SoftDeletes.php',
@@ -85,11 +84,10 @@ class ConfigProvider
                         Client::class => __DIR__ . '/../class_map/GuzzleHttp/Client.php',
                         RedisDriver::class => __DIR__ . '/../class_map/Hyperf/Cache/Driver/RedisDriver.php',
                         StringHelper::class => __DIR__ . '/../class_map/Hyperf/Cache/Helper/StringHelper.php',
-//                        Driver::class => __DIR__ . '/../class_map/Hyperf/AsyncQueue/Driver/Driver.php',
+                        // Driver::class => __DIR__ . '/../class_map/Hyperf/AsyncQueue/Driver/Driver.php',
                         AsyncQueueRedisDriver::class => __DIR__ . '/../class_map/Hyperf/AsyncQueue/Driver/RedisDriver.php',
 
-//                        Concurrent::class => __DIR__ . '/../class_map/Hyperf/Utils/Coroutine/Concurrent.php',
-                        CoroutineConcurrent::class => __DIR__ . '/../class_map/Hyperf/Coroutine/Concurrent.php',
+                        Concurrent::class => __DIR__ . '/../class_map/Hyperf/Coroutine/Concurrent.php',
 
                         RateLimitAnnotationAspect::class => __DIR__ . '/../class_map/Hyperf/RateLimit/Aspect/RateLimitAnnotationAspect.php',
 
@@ -103,8 +101,7 @@ class ConfigProvider
                         NacosDriver::class => __DIR__ . '/../class_map/Hyperf/ServiceGovernanceNacos/NacosDriver.php',
                         ServiceGovernanceNacosClient::class => __DIR__ . '/../class_map/Hyperf/ServiceGovernanceNacos/Client.php',
 
-
-//                        RedisPool::class => __DIR__ . '/../class_map/Hyperf/Redis/Pool/RedisPool.php',
+                        // RedisPool::class => __DIR__ . '/../class_map/Hyperf/Redis/Pool/RedisPool.php',
 
                         JsonRpcHttpTransporter::class => __DIR__ . '/../class_map/Hyperf/JsonRpc/JsonRpcHttpTransporter.php',
                         PathGenerator::class => __DIR__ . '/../class_map/Hyperf/Grpc/PathGenerator.php',
@@ -115,30 +112,29 @@ class ConfigProvider
                         SignerV1::class => __DIR__ . '/../class_map/OSS/Signer/SignerV1.php',
                         SignerV4::class => __DIR__ . '/../class_map/OSS/Signer/SignerV4.php',
 
-//                        Signal::class => __DIR__ . '/../class_map/Hyperf/Engine/Signal.php',
-
+                        // Signal::class => __DIR__ . '/../class_map/Hyperf/Engine/Signal.php',
                     ],
                 ],
             ],
             'publish' => [
-//                [
-//                    'id' => 'apollo-config',
-//                    'description' => 'The config for apollo',
-//                    'source' => __DIR__ . '/../publish/apollo.php',
-//                    'destination' => BASE_PATH . '/config/autoload/apollo.php',
-//                ],
-//                [
-//                    'id' => 'restart-console-config',
-//                    'description' => 'The config for restart process',
-//                    'source' => __DIR__ . '/../publish/restart_console.php',
-//                    'destination' => BASE_PATH . '/config/autoload/restart_console.php',
-//                ],
-//                [
-//                    'id' => 'restart-process-script',
-//                    'description' => 'The script for restart process',
-//                    'source' => __DIR__ . '/../publish/bin/restart.php',
-//                    'destination' => BASE_PATH . '/bin/restart.php',
-//                ],
+                //                [
+                //                    'id' => 'apollo-config',
+                //                    'description' => 'The config for apollo',
+                //                    'source' => __DIR__ . '/../publish/apollo.php',
+                //                    'destination' => BASE_PATH . '/config/autoload/apollo.php',
+                //                ],
+                //                [
+                //                    'id' => 'restart-console-config',
+                //                    'description' => 'The config for restart process',
+                //                    'source' => __DIR__ . '/../publish/restart_console.php',
+                //                    'destination' => BASE_PATH . '/config/autoload/restart_console.php',
+                //                ],
+                //                [
+                //                    'id' => 'restart-process-script',
+                //                    'description' => 'The script for restart process',
+                //                    'source' => __DIR__ . '/../publish/bin/restart.php',
+                //                    'destination' => BASE_PATH . '/bin/restart.php',
+                //                ],
                 [
                     'id' => 'async-queue-config',
                     'description' => 'The config for async queue.',

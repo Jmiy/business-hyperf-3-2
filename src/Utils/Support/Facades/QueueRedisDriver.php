@@ -1,32 +1,48 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
+
 namespace Business\Hyperf\Utils\Support\Facades;
 
-use Hyperf\Process\ProcessManager;
-use function Hyperf\Config\config;
-use function Hyperf\Support\make;
-use function Hyperf\Support\call;
-use function Business\Hyperf\Utils\Collection\data_get;
-use Hyperf\Collection\Arr;
-use Hyperf\Coroutine\Concurrent;
 use Business\Hyperf\Constants\Constant;
 use Hyperf\AsyncQueue\Driver\ChannelConfig;
+use Hyperf\Collection\Arr;
+use Hyperf\Coroutine\Concurrent;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Throwable;
+
+use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Config\config;
+use function Hyperf\Support\call;
+use function Hyperf\Support\make;
 
 class QueueRedisDriver
 {
     public static array $channelData = [];
 
-    public static function getKey(string|array $connection, mixed $table, array $lockKeys = [])
+    public static function getKey(array|string $connection, mixed $table, array $lockKeys = [])
     {
         $connection = is_array($connection) ? $connection : [$connection];
         array_unshift($connection, config('app_env'));
         array_unshift($connection, config('app_name'));
-        return strtolower(implode(':', array_filter(
+        return strtolower(
+            implode(
+                ':',
+                array_filter(
                     Arr::collapse(
                         [
                             $connection,
                             is_array($table) ? $table : [$table],
-                            $lockKeys
+                            $lockKeys,
                         ]
                     )
                 )
@@ -57,13 +73,12 @@ class QueueRedisDriver
         return static::getQueueConfig(
             Arr::collapse([
                 ['business'],
-                (is_array($channel) ? $channel : [$channel]),
+                is_array($channel) ? $channel : [$channel],
             ]),
             $queueConnection,
             $default
         );
     }
-
 
     public static function push(string $poolName = 'default', string $channel = '', $data = null, int $delay = 0, mixed $queueConnection = null): bool
     {
@@ -72,8 +87,8 @@ class QueueRedisDriver
 
         // 如果待执行队列是使用有序集合实现，并且当前压入队列的元素已经存在，就直接返回压入队列成功
         if (
-            static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset' &&
-            (
+            static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset'
+            && (
                 $redis->zScore($channel->getWaiting(), $data) !== false
                 || $redis->zScore($channel->getDelayed(), $data) !== false
             )
@@ -85,36 +100,28 @@ class QueueRedisDriver
         if ($delay === 0) {
             if (static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset') {
                 return (bool) $redis->zAdd($channel->getWaiting(), $microtime, $data);
-            } else {
-                return (bool) $redis->lPush($channel->getWaiting(), $data);
             }
+            return (bool) $redis->lPush($channel->getWaiting(), $data);
         }
 
         return (bool) $redis->zAdd($channel->getDelayed(), $microtime + $delay, $data);
     }
 
     /**
-     * @param string $poolName
-     * @param string $channel
-     * @param int $limit
      * @param int $handleTimeout 默认：-1  表示使用配置控制
-     * @param mixed|null $queueConnection
-     * @param array $extendData
-     * @return mixed
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      * @throws \RedisException
-     * @throws \Throwable
+     * @throws Throwable
      */
     public static function pop(
         string $poolName = 'default',
         string $channel = '',
-        int    $limit = 50,
-        int    $handleTimeout = -1,
-        mixed  $queueConnection = null,
-        array  $extendData = []
-    ): mixed
-    {
+        int $limit = 50,
+        int $handleTimeout = -1,
+        mixed $queueConnection = null,
+        array $extendData = []
+    ): mixed {
         $channel = static::getChannel($channel);
         $redis = Redis::getRedis($poolName);
 
@@ -123,28 +130,27 @@ class QueueRedisDriver
         }
 
         $options = ['LIMIT' => [0, $limit]];
-        //将延迟队列中到期的消息压入正在执行队列
+        // 将延迟队列中到期的消息压入正在执行队列
         static::move($poolName, $channel->getDelayed(), $channel->getWaiting(), $queueConnection, $options);
 
-        //将执行超时的消息压入超时队列
+        // 将执行超时的消息压入超时队列
         $timeoutIsPush = static::getQueueBusinessConfig(['timeout', 'isPush'], $queueConnection, true);
         if ($timeoutIsPush === true) {
             static::move($poolName, $channel->getReserved(), $channel->getTimeout(), $queueConnection, $options);
         }
 
-        //弹出待执行的消息
+        // 弹出待执行的消息
         $reservedIsPush = static::getQueueBusinessConfig(['reserved', 'isPush'], $queueConnection, true);
         $data = [];
         if (static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset') {
-
-            for ($i = 0; $i < $limit; $i++) {
-//                $f = microtime(true);
+            for ($i = 0; $i < $limit; ++$i) {
+                //                $f = microtime(true);
                 $res = $redis->bzPopMin($channel->getWaiting(), 2);
-//                var_dump(
-//                    $channel->getWaiting(),
-//                    $_res,
-//                    (number_format(microtime(true) - $f, 8, '.', '') * 1000) . ' ms'
-//                );
+                //                var_dump(
+                //                    $channel->getWaiting(),
+                //                    $_res,
+                //                    (number_format(microtime(true) - $f, 8, '.', '') * 1000) . ' ms'
+                //                );
                 if (empty($res)) {
                     unset($res);
                     break;
@@ -153,15 +159,15 @@ class QueueRedisDriver
                 [$key, $item, $score] = $res;
                 $data[] = $item;
                 if ($reservedIsPush === true) {
-                    //将待执行的消息压入正在执行队列
+                    // 将待执行的消息压入正在执行队列
                     $redis->zadd($channel->getReserved(), time() + $handleTimeout, $item);
                 }
                 unset($key, $item, $score, $res);
             }
         } else {
-            for ($i = 0; $i < $limit; $i++) {
+            for ($i = 0; $i < $limit; ++$i) {
                 $res = $redis->brPop($channel->getWaiting(), 2);
-                if (! isset($res[1])) {//如果待执行队列没有数据了，就跳出整个循环
+                if (! isset($res[1])) {// 如果待执行队列没有数据了，就跳出整个循环
                     unset($res);
                     break;
                 }
@@ -169,7 +175,7 @@ class QueueRedisDriver
                 $item = $res[1];
                 $data[] = $item;
                 if ($reservedIsPush === true) {
-                    //将待执行的消息压入正在执行队列
+                    // 将待执行的消息压入正在执行队列
                     $redis->zadd($channel->getReserved(), time() + $handleTimeout, $item);
                 }
                 unset($item, $res);
@@ -182,28 +188,27 @@ class QueueRedisDriver
     public static function consume(
         string $poolName = 'default',
         string $channel = '',
-        int    $limit = 50,
-        int    $handleTimeout = -1,
-        mixed  $callBack = null,
-        mixed  $queueConnection = null,
-        array  $extendData = []
-    ): mixed
-    {
+        int $limit = 50,
+        int $handleTimeout = -1,
+        mixed $callBack = null,
+        mixed $queueConnection = null,
+        array $extendData = []
+    ): mixed {
         $data = static::pop($poolName, $channel, $limit, $handleTimeout, $queueConnection, $extendData);
 
         $concurrentLimit = static::getQueueBusinessConfig(['concurrent', 'limit'], $queueConnection, 10);
-        if (!empty($data)) {
+        if (! empty($data)) {
             $callback = static::getCallback($poolName, $channel, $data, $callBack, $queueConnection, $extendData);
             $concurrent = new Concurrent($concurrentLimit);
             $concurrent->create($callback);
         }
 
-        //将超时队列消息重新入到待执行队列
+        // 将超时队列消息重新入到待执行队列
         $timeoutIsPush = static::getQueueBusinessConfig(['timeout', 'isPush'], $queueConnection, true);
         if ($timeoutIsPush === true) {
             static::reload($poolName, $channel, 'timeout', $queueConnection);
         }
-//        var_dump(__METHOD__, $timeoutIsPush, $handleTimeout, $concurrentLimit);
+        //        var_dump(__METHOD__, $timeoutIsPush, $handleTimeout, $concurrentLimit);
 
         return $data;
     }
@@ -216,35 +221,39 @@ class QueueRedisDriver
     public static function getCallback(
         string $poolName = 'default',
         string $channel = '',
-        mixed  $data = [],
-        mixed  $callBack = null,
-        mixed  $queueConnection = null,
-        array  $extendData = []
-    ): callable
-    {
-        return function () use ($poolName, $channel, $data, $callBack, $queueConnection, $extendData) {
-
+        mixed $data = [],
+        mixed $callBack = null,
+        mixed $queueConnection = null,
+        array $extendData = []
+    ): callable {
+        return function () use ($poolName, $channel, $data, $callBack, $queueConnection) {
             $handleCallBack = [];
 
-            //Remove data from reserved queue.
+            // Remove data from reserved queue.
             $reservedIsPush = static::getQueueBusinessConfig(['reserved', 'isPush'], $queueConnection, true);
             if ($reservedIsPush === true) {
-                $handleCallBack['ack'] = getJobData(static::class, 'ack', [
-                        $poolName, $channel, $data, $queueConnection
+                $handleCallBack['ack'] = getJobData(
+                    static::class,
+                    'ack',
+                    [
+                        $poolName, $channel, $data, $queueConnection,
                     ]
                 );
             }
 
-            //Remove data from reserved queue. lPush data to failed queue.
+            // Remove data from reserved queue. lPush data to failed queue.
             $failedIsPush = static::getQueueBusinessConfig(['failed', 'isPush'], $queueConnection, true);
             if ($failedIsPush === true) {
-                $handleCallBack['fail'] = getJobData(static::class, 'fail', [
-                        $poolName, $channel, $data, $queueConnection
+                $handleCallBack['fail'] = getJobData(
+                    static::class,
+                    'fail',
+                    [
+                        $poolName, $channel, $data, $queueConnection,
                     ]
                 );
             }
 
-//            var_dump('getCallback', $reservedIsPush, $handleCallBack);
+            //            var_dump('getCallback', $reservedIsPush, $handleCallBack);
 
             $service = data_get($callBack, Constant::SERVICE, '');
             $method = data_get($callBack, Constant::METHOD, '');
@@ -252,7 +261,7 @@ class QueueRedisDriver
             $parameters[] = $data;
             $parameters[] = $handleCallBack;
 
-            call([$service, $method], $parameters);//兼容各种调用 $service::{$method}(...$parameters);
+            call([$service, $method], $parameters); // 兼容各种调用 $service::{$method}(...$parameters);
         };
     }
 
@@ -263,7 +272,7 @@ class QueueRedisDriver
     {
         $redis = Redis::getRedis($poolName);
         $channel = static::getChannel($channel);
-        return (bool)$redis->zRem($channel->getDelayed(), $data);
+        return (bool) $redis->zRem($channel->getDelayed(), $data);
     }
 
     /**
@@ -292,7 +301,7 @@ class QueueRedisDriver
     {
         $redis = Redis::getRedis($poolName);
         $channel = static::getChannel($channel);
-        if (static::remove($poolName, $channel, $data, $queueConnection)) {//Remove data from reserved queue.
+        if (static::remove($poolName, $channel, $data, $queueConnection)) {// Remove data from reserved queue.
             foreach ($data as $item) {
                 $redis->lPush($channel->getFailed(), $item);
             }
@@ -302,14 +311,14 @@ class QueueRedisDriver
         return false;
     }
 
-    public static function reload(?string $poolName = 'default', ?string $channel = '', string|null $queue = null, mixed $queueConnection = null): int
+    public static function reload(?string $poolName = 'default', ?string $channel = '', ?string $queue = null, mixed $queueConnection = null): int
     {
         $redis = Redis::getRedis($poolName);
         $_channel = static::getChannel($channel);
 
         $channel = $_channel->getFailed();
         if ($queue) {
-            if (!in_array($queue, ['timeout', 'failed'])) {
+            if (! in_array($queue, ['timeout', 'failed'])) {
                 throw new InvalidQueueException(sprintf('Queue %s is not supported.', $queue));
             }
 
@@ -318,14 +327,13 @@ class QueueRedisDriver
 
         $num = 0;
         if (static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset') {
-
             $listLen = $redis->lLen($channel);
             if (empty($listLen)) {
                 return $num;
             }
 
             $res = $redis->rpop($channel, $listLen);
-            if (empty($res) || !is_array($res)) {//如果待执行队列没有数据了，就跳出整个循环
+            if (empty($res) || ! is_array($res)) {// 如果待执行队列没有数据了，就跳出整个循环
                 return $num;
             }
 
@@ -345,11 +353,10 @@ class QueueRedisDriver
             }
         }
 
-
         return $num;
     }
 
-    public static function flush(?string $poolName = 'default', ?string $channel = '', string|null $queue = null, mixed $queueConnection = null): bool
+    public static function flush(?string $poolName = 'default', ?string $channel = '', ?string $queue = null, mixed $queueConnection = null): bool
     {
         $redis = Redis::getRedis($poolName);
         $_channel = static::getChannel($channel);
@@ -359,7 +366,7 @@ class QueueRedisDriver
             $channel = $_channel->get($queue);
         }
 
-        return (bool)$redis->del($channel);
+        return (bool) $redis->del($channel);
     }
 
     public static function info(?string $poolName = 'default', ?string $channel = '', mixed $queueConnection = null): array
@@ -383,28 +390,6 @@ class QueueRedisDriver
         ];
     }
 
-    protected function retry(MessageInterface $message, mixed $queueConnection = null): bool
-    {
-        $data = $this->packer->pack($message);
-
-        $delay = time() + $this->getRetrySeconds($message->getAttempts());
-
-        return $this->redis->zAdd($this->channel->getDelayed(), $delay, $data) > 0;
-    }
-
-    protected function getRetrySeconds(int $attempts, mixed $queueConnection = null): int
-    {
-        if (!is_array($this->retrySeconds)) {
-            return $this->retrySeconds;
-        }
-
-        if (empty($this->retrySeconds)) {
-            return 10;
-        }
-
-        return $this->retrySeconds[$attempts - 1] ?? end($this->retrySeconds);
-    }
-
     /**
      * Move message to the waiting queue.
      */
@@ -413,23 +398,23 @@ class QueueRedisDriver
         $now = time();
         $options = Arr::collapse([
             ['LIMIT' => [0, 100]],
-            $options
+            $options,
         ]);
         $redis = Redis::getRedis($poolName);
 
         /**
-         * List elements from a Redis sorted set by score, highest to lowest
+         * List elements from a Redis sorted set by score, highest to lowest.
          *
-         * @param string $key The sorted set to query.
-         * @param string $start The highest score to include in the results.
-         * @param string $end The lowest score to include in the results.
+         * @param string $key the sorted set to query
+         * @param string $start the highest score to include in the results
+         * @param string $end the lowest score to include in the results
          * @param array $options An options array that modifies how the command executes.
-         *                        <code>
-         *                        $options = [
-         *                            'WITHSCORES' => true|false # Whether or not to return scores
-         *                            'LIMIT' => [offset, count] # Return a subset of the matching members
-         *                        ];
-         *                        </code>
+         *                       <code>
+         *                       $options = [
+         *                       'WITHSCORES' => true|false # Whether or not to return scores
+         *                       'LIMIT' => [offset, count] # Return a subset of the matching members
+         *                       ];
+         *                       </code>
          *
          *                        NOTE:  For legacy reason, you may also simply pass `true` for the
          *                               options argument, to mean `WITHSCORES`.
@@ -450,11 +435,11 @@ class QueueRedisDriver
          * $redis->zRevRangeByScore('oldest-people', 'inf', 118);
          * $redis->zRevRangeByScore('oldest-people', '117.5', '-inf', ['LIMIT' => [0, 1]]);
          */
-        if ($expired = $redis->zrevrangebyscore($from, (string)$now, '-inf', $options)) {
+        if ($expired = $redis->zrevrangebyscore($from, (string) $now, '-inf', $options)) {
             foreach ($expired as $job) {
                 if ($redis->zRem($from, $job) > 0) {
-                    if (!empty($to)) {
-                        if (false !== strpos($to, ':waiting') && static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset') {
+                    if (! empty($to)) {
+                        if (strpos($to, ':waiting') !== false && static::getQueueBusinessConfig('waiting', $queueConnection) === 'zset') {
                             $redis->zAdd($to, microtime(true), $job);
                         } else {
                             $redis->lPush($to, $job);
@@ -465,5 +450,25 @@ class QueueRedisDriver
         }
     }
 
+    protected function retry(MessageInterface $message, mixed $queueConnection = null): bool
+    {
+        $data = $this->packer->pack($message);
 
+        $delay = time() + $this->getRetrySeconds($message->getAttempts());
+
+        return $this->redis->zAdd($this->channel->getDelayed(), $delay, $data) > 0;
+    }
+
+    protected function getRetrySeconds(int $attempts, mixed $queueConnection = null): int
+    {
+        if (! is_array($this->retrySeconds)) {
+            return $this->retrySeconds;
+        }
+
+        if (empty($this->retrySeconds)) {
+            return 10;
+        }
+
+        return $this->retrySeconds[$attempts - 1] ?? end($this->retrySeconds);
+    }
 }
