@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Kernel\Http;
 
+use BadMethodCallException;
 use Hyperf\Context\ResponseContext;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\HttpMessage\Cookie\Cookie;
@@ -19,6 +20,7 @@ use Hyperf\HttpMessage\Exception\BadRequestHttpException;
 use Hyperf\HttpMessage\Exception\HttpException;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Hyperf\HttpServer\Contract\ResponseInterface;
+use Hyperf\HttpServer\Response as HttpServerResponse;
 use Psr\Container\ContainerInterface;
 use Swow\Psr7\Message\ResponsePlusInterface;
 
@@ -77,5 +79,15 @@ class Response
     public function response(): ResponsePlusInterface
     {
         return ResponseContext::get();
+    }
+
+    public function __call(string $name, array $arguments): mixed
+    {
+        return $this->response->{$name}(...$arguments);
+    }
+
+    public static function __callStatic($method, $parameters)
+    {
+        return HttpServerResponse::{$method}(...$parameters);
     }
 }
