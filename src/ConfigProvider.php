@@ -48,6 +48,7 @@ use Hyperf\ServiceGovernanceNacos\NacosDriver;
 use OSS\Model\ObjectVersionListInfo;
 use OSS\Signer\SignerV1;
 use OSS\Signer\SignerV4;
+use Hyperf\Pool\Pool;
 
 class ConfigProvider
 {
@@ -113,6 +114,8 @@ class ConfigProvider
                         SignerV4::class => __DIR__ . '/../class_map/OSS/Signer/SignerV4.php',
 
                         // Signal::class => __DIR__ . '/../class_map/Hyperf/Engine/Signal.php',
+
+                        Pool::class => __DIR__ . '/../class_map/Hyperf/Pool/Pool.php',
                     ],
                 ],
             ],
