@@ -42,17 +42,25 @@ class GRpcService extends BaseConsumer
      */
     public static string $loadBalancer = 'random';
 
-    public static function __callStatic($method, $args)
+    /**
+     * Handle dynamic, static calls to the object.
+     *
+     * @param string $name
+     * @param array $arguments
+     * @return mixed
+     *
+     * @throws RuntimeException
+     */
+    public static function __callStatic(string $name, array $arguments): mixed
     {
-        $deserialize = $args[0];
-        unset($args[0]);
+        $deserialize = $arguments[0];
+        unset($arguments[0]);
 
-        $args = array_values($args);
+        $arguments = array_values($arguments);
 
-        $data = parent::__callStatic($method, $args);
+        $data = parent::__callStatic($name, $arguments);
 
         //        var_dump(__METHOD__, $data);
-
         if (is_array($data) && array_key_exists('code', $data)) {
             return $data;
         }

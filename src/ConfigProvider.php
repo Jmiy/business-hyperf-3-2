@@ -50,6 +50,14 @@ use OSS\Signer\SignerV1;
 use OSS\Signer\SignerV4;
 use Hyperf\Pool\Pool;
 
+use Business\Hyperf\Rpc\Mcp\DataFormatter;
+use Business\Hyperf\Rpc\Mcp\DataFormatterFactory;
+use Business\Hyperf\Rpc\Mcp\Listener\RegisterProtocolListener;
+use Business\Hyperf\Rpc\Mcp\Listener\RegisterServiceListener as RpcMcpServiceListener;
+use Hyperf\ServiceGovernance\ServiceManager;
+
+use function Hyperf\Support\value;
+
 class ConfigProvider
 {
     public function __invoke(): array
@@ -59,6 +67,16 @@ class ConfigProvider
                 LuaInterface::class => LuaFactory::class,
                 // EncrypterInterface::class => EncrypterFactory::class,
                 // 'db.connector.pgsql' => PostgresConnector::class,
+                DataFormatter::class => DataFormatterFactory::class,
+            ],
+            'listeners' => [
+                RegisterProtocolListener::class,
+                value(function () {
+                    if (class_exists(ServiceManager::class)) {
+                        return RpcMcpServiceListener::class;
+                    }
+                    return null;
+                }),
             ],
             'processes' => [
                 // RestartServiceProcess::class,
