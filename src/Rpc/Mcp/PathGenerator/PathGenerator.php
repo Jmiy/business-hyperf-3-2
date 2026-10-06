@@ -20,7 +20,6 @@ class PathGenerator implements PathGeneratorInterface
 {
     public function generate(string $service, string $method): string
     {
-//        var_dump(__METHOD__,$service,$method);
         $handledNamespace = explode('\\', $service);
         $handledNamespace = Str::replaceLast('Service', '', end($handledNamespace));
         $path = StrCache::snake($handledNamespace);

@@ -74,7 +74,9 @@ class BaseConsumer
 
         static::setRpcContext($rpcContext);
 
-        return static::getInstance()->__request($name, $arguments);
+//        return static::getInstance()->__request($name, $arguments);
+//        var_dump(__METHOD__, $name,$arguments);
+        return static::getInstance()->$name(...$arguments);
     }
 
     public static function setHeaders(array $context = [])

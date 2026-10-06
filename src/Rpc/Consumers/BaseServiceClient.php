@@ -32,7 +32,7 @@ class BaseServiceClient extends AbstractServiceClient
         parent::__construct($container);
     }
 
-    public function __request(string $method, array $params, ?string $id = null)
+    protected function __request(string $method, array $params, ?string $id = null)
     {
         if (! $id && $this->idGenerator instanceof IdGeneratorInterface) {
             $id = $this->idGenerator->generate();

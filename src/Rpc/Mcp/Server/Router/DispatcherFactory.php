@@ -109,11 +109,15 @@ class DispatcherFactory
         $publicMethods = ReflectionManager::reflectClass($className)->getMethods(ReflectionMethod::IS_PUBLIC);
 
         foreach ($publicMethods as $reflectionMethod) {
-            $methodName = $reflectionMethod->getName();
-            if (Str::startsWith($methodName, '__')) {
-                continue;
+            $method = $methodName = $reflectionMethod->getName();
+            if ($methodName == '__init__') {
+                $method = '';
+            } else {
+                if (Str::startsWith($methodName, '__')) {
+                    continue;
+                }
             }
-            $path = $this->pathGenerator->generate($prefix, $methodName);
+            $path = $this->pathGenerator->generate($prefix, $method);
             $router->addRoute($path, [
                 $className,
                 $methodName,
@@ -134,27 +138,6 @@ class DispatcherFactory
             $this->eventDispatcher->dispatch(new AfterPathRegister($path, $className, $methodName, $annotation));
         }
 
-        $methodName = '__init__';
-        $path = $this->pathGenerator->generate($prefix, '');
-        $router->addRoute($path, [
-            $className,
-            $methodName,
-        ]);
-//        var_dump(__METHOD__,$annotation->name,$annotation->server);
-
-        $methodMiddlewares = $middlewares;
-        // Handle method level middlewares.
-        if (isset($methodMetadata[$methodName])) {
-            $methodMiddlewares = array_merge($this->handleMiddleware($methodMetadata[$methodName]), $middlewares);
-        }
-        // TODO: Remove array_unique from v3.0.
-        $methodMiddlewares = array_unique($methodMiddlewares);
-
-        // Register middlewares.
-        MiddlewareManager::addMiddlewares($annotation->server, $path, 'POST', $methodMiddlewares);
-
-        // Trigger the AfterPathRegister event.
-        $this->eventDispatcher->dispatch(new AfterPathRegister($path, $className, $methodName, $annotation));
     }
 
     private function handleMiddleware(array $metadata): array
