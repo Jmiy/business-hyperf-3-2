@@ -56,6 +56,10 @@ use Business\Hyperf\Rpc\Mcp\Listener\RegisterProtocolListener;
 use Business\Hyperf\Rpc\Mcp\Listener\RegisterServiceListener as RpcMcpServiceListener;
 use Hyperf\ServiceGovernance\ServiceManager;
 
+use Hyperf\RpcServer\CoreMiddleware;
+use Hyperf\RpcServer\Router\DispatcherFactory;
+use Hyperf\GrpcServer\CoreMiddleware as GrpcCoreMiddleware;
+
 use function Hyperf\Support\value;
 
 class ConfigProvider
@@ -134,6 +138,10 @@ class ConfigProvider
                         // Signal::class => __DIR__ . '/../class_map/Hyperf/Engine/Signal.php',
 
                         Pool::class => __DIR__ . '/../class_map/Hyperf/Pool/Pool.php',
+
+                        CoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/RpcServer/CoreMiddleware.php',
+                        DispatcherFactory::class => __DIR__ . '/../class_map/Hyperf/RpcServer/Router/DispatcherFactory.php',
+                        GrpcCoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/GrpcServer/CoreMiddleware.php',
                     ],
                 ],
             ],

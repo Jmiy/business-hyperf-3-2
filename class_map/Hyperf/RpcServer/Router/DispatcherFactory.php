@@ -10,7 +10,7 @@ declare(strict_types=1);
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 
-namespace Business\Hyperf\Rpc\Mcp\Server\Router;
+namespace Hyperf\RpcServer\Router;
 
 use FastRoute\DataGenerator\GroupCountBased as DataGenerator;
 use FastRoute\Dispatcher;
@@ -28,10 +28,6 @@ use Hyperf\RpcServer\Event\AfterPathRegister;
 use Hyperf\Stringable\Str;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use ReflectionMethod;
-use Hyperf\RpcServer\Router\RouteCollector;
-//use Hyperf\RpcServer\Router\Router;
-
-// extends \Hyperf\RpcServer\Router\DispatcherFactory
 
 class DispatcherFactory
 {
@@ -47,17 +43,38 @@ class DispatcherFactory
      */
     private array $dispatchers = [];
 
-    public function __construct(private EventDispatcherInterface $eventDispatcher, private PathGeneratorInterface $pathGenerator)
+    protected ?PathGeneratorInterface $pathGenerator = null;
+    protected ?string $serverName = null;
+
+    /**
+     * AOP update jmiy 2026-10-13
+     * @param EventDispatcherInterface $eventDispatcher
+     */
+    public function __construct(protected EventDispatcherInterface $eventDispatcher)
     {
-        $this->initAnnotationRoute(AnnotationCollector::list());
         $this->initConfigRoute();
     }
 
-    public function getDispatcher(string $serverName): Dispatcher
+    /**
+     * AOP update jmiy 2026-10-13
+     * @param string $serverName
+     * @param PathGeneratorInterface $pathGenerator
+     * @return Dispatcher
+     */
+    public function getDispatcher(string $serverName, PathGeneratorInterface $pathGenerator): Dispatcher
     {
+        /* AOP handle start */
+        $this->serverName = $serverName;
+        $this->pathGenerator = $pathGenerator;
+        /* AOP handle end */
+
         if (isset($this->dispatchers[$serverName])) {
             return $this->dispatchers[$serverName];
         }
+
+        /* AOP handle start */
+        $this->initAnnotationRoute(AnnotationCollector::list());
+        /* AOP handle end */
 
         $router = $this->getRouter($serverName);
         return $this->dispatchers[$serverName] = new GroupCountBased($router->getData());
@@ -84,12 +101,23 @@ class DispatcherFactory
         return $this->routers[$serverName] = new RouteCollector($parser, $generator);
     }
 
+    /**
+     * AOP update jmiy 2026-10-13
+     * @param array $collector
+     * @return void
+     * @throws ConflictAnnotationException
+     */
     private function initAnnotationRoute(array $collector): void
     {
         foreach ($collector as $className => $metadata) {
             if (isset($metadata['_c'][RpcService::class])) {
                 $middlewares = $this->handleMiddleware($metadata['_c']);
-                $this->handleRpcService($className, $metadata['_c'][RpcService::class], $metadata['_m'] ?? [], $middlewares);
+                /* AOP handle start */
+                $annotation = $metadata['_c'][RpcService::class];
+                if($annotation->server == $this->serverName){
+                    $this->handleRpcService($className, $annotation, $metadata['_m'] ?? [], $middlewares);
+                }
+                /* AOP handle end */
             }
         }
     }
@@ -109,15 +137,11 @@ class DispatcherFactory
         $publicMethods = ReflectionManager::reflectClass($className)->getMethods(ReflectionMethod::IS_PUBLIC);
 
         foreach ($publicMethods as $reflectionMethod) {
-            $method = $methodName = $reflectionMethod->getName();
-            if ($methodName == '__init__') {
-                $method = '';
-            } else {
-                if (Str::startsWith($methodName, '__')) {
-                    continue;
-                }
+            $methodName = $reflectionMethod->getName();
+            if (Str::startsWith($methodName, '__')) {
+                continue;
             }
-            $path = $this->pathGenerator->generate($prefix, $method);
+            $path = $this->pathGenerator->generate($prefix, $methodName);
             $router->addRoute($path, [
                 $className,
                 $methodName,
@@ -137,10 +161,9 @@ class DispatcherFactory
             // Trigger the AfterPathRegister event.
             $this->eventDispatcher->dispatch(new AfterPathRegister($path, $className, $methodName, $annotation));
         }
-
     }
 
-    private function handleMiddleware(array $metadata): array
+    protected function handleMiddleware(array $metadata): array
     {
         $hasMiddlewares = isset($metadata[Middlewares::class]);
         $hasMiddleware = isset($metadata[Middleware::class]);

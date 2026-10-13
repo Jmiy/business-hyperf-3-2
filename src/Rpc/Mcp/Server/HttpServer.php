@@ -50,8 +50,8 @@ class HttpServer extends JsonRpcHttpServer
         ]);
     }
 
-    protected function createCoreMiddleware(): CoreMiddlewareInterface
-    {
-        return new HttpCoreMiddleware($this->container, $this->protocol, $this->responseBuilder, $this->serverName);
-    }
+//    protected function createCoreMiddleware(): CoreMiddlewareInterface
+//    {
+//        return new HttpCoreMiddleware($this->container, $this->protocol, $this->responseBuilder, $this->serverName);
+//    }
 }
