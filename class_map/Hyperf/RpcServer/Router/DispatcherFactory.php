@@ -163,7 +163,7 @@ class DispatcherFactory
         }
     }
 
-    protected function handleMiddleware(array $metadata): array
+    private function handleMiddleware(array $metadata): array
     {
         $hasMiddlewares = isset($metadata[Middlewares::class]);
         $hasMiddleware = isset($metadata[Middleware::class]);
