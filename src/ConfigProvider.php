@@ -114,13 +114,13 @@ class ConfigProvider
 
                         RateLimitAnnotationAspect::class => __DIR__ . '/../class_map/Hyperf/RateLimit/Aspect/RateLimitAnnotationAspect.php',
 
+                        Config::class => __DIR__ . '/../class_map/Hyperf/Nacos/Config.php',
                         AbstractDriver::class => __DIR__ . '/../class_map/Hyperf/ConfigCenter/AbstractDriver.php',
-                        ConfigNacosClient::class => __DIR__ . '/../class_map/Hyperf/ConfigNacos/NacosClient.php',
-                        ConfigClient::class => __DIR__ . '/../class_map/Hyperf/ConfigNacos/Client.php',
                         ConfigNacosDriver::class => __DIR__ . '/../class_map/Hyperf/ConfigNacos/NacosDriver.php',
+                        ConfigClient::class => __DIR__ . '/../class_map/Hyperf/ConfigNacos/Client.php',
+                        ConfigNacosClient::class => __DIR__ . '/../class_map/Hyperf/ConfigNacos/NacosClient.php',
 
                         RegisterServiceListener::class => __DIR__ . '/../class_map/Hyperf/ServiceGovernance/Listener/RegisterServiceListener.php',
-                        Config::class => __DIR__ . '/../class_map/Hyperf/Nacos/Config.php',
                         NacosDriver::class => __DIR__ . '/../class_map/Hyperf/ServiceGovernanceNacos/NacosDriver.php',
                         ServiceGovernanceNacosClient::class => __DIR__ . '/../class_map/Hyperf/ServiceGovernanceNacos/Client.php',
 

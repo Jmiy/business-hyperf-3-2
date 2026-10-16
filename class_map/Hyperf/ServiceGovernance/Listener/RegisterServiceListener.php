@@ -16,7 +16,6 @@ use Exception;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Contract\IPReaderInterface;
 use Hyperf\Contract\StdoutLoggerInterface;
-use Hyperf\Coroutine\Coroutine;
 use Hyperf\Event\Contract\ListenerInterface;
 use Hyperf\Framework\Event\MainWorkerStart;
 use Hyperf\Server\Event\MainCoroutineServerStart;
@@ -25,6 +24,8 @@ use Hyperf\ServiceGovernance\ServiceManager;
 use InvalidArgumentException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
+use function Hyperf\Collection\data_get;
 
 class RegisterServiceListener implements ListenerInterface
 {
@@ -56,6 +57,7 @@ class RegisterServiceListener implements ListenerInterface
     }
 
     /**
+     * AOP update jmiy 2026-10-16
      * @param MainCoroutineServerStart|MainWorkerStart $event
      */
     public function process(object $event): void
@@ -64,37 +66,29 @@ class RegisterServiceListener implements ListenerInterface
         if (! $register) {
             return;
         }
-
-        //        server=jsonrpc-http
-        //        className=App\Service\Provider\Email\EmailService
-        //        protocol=jsonrpc-http
-        //        publishTo=nacos
-
+        /* AOP handle start */
+        $index = 'service_providers';
+        $_services = $this->config->get('services', []);
+        /* AOP handle end */
         $attempts = 10;
         while ($attempts > 0) {
             try {
-                $tryNum = 0;
-                beginning:
-
                 $services = $this->serviceManager->all();
                 $servers = $this->getServers();
                 foreach ($services as $serviceName => $serviceProtocols) {
+                    /* AOP handle start */
+                    $isRegistry = data_get($_services, [$index, $serviceName, 'is_registry'], true); // $serviceName对应是服务是否需要注册 true:需要  false：不需要 默认：true
+                    if ($isRegistry === false) {
+                        continue;
+                    }
+                    /* AOP handle end */
                     foreach ($serviceProtocols as $paths) {
                         foreach ($paths as $service) {
-                            if (! isset($service['publishTo'], $service['server'])) {
+                            /* AOP handle start */
+                            if (! isset($service['publishTo'], $service['server'], $servers[$service['server']])) {
                                 continue;
                             }
-
-                            //                            var_dump(__METHOD__, $service);
-                            if (! isset($service['className']) || empty($service['className'])) {
-                                if ($tryNum < 5) {
-                                    Coroutine::sleep(1);
-
-                                    $tryNum = $tryNum + 1;
-
-                                    goto beginning;
-                                }
-                            }
+                            /* AOP handle end */
 
                             [$address, $port] = $servers[$service['server']];
                             if ($governance = $this->governanceManager->get($service['publishTo'])) {

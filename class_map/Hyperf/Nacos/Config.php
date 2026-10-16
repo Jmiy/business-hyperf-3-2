@@ -32,6 +32,8 @@ class Config
 
     protected ?string $version = '1.0';
 
+    protected ?CloudName $cloudName = null;
+
     protected array $grpc = [
         'enable' => true,
         'heartbeat' => 10,
@@ -56,6 +58,7 @@ class Config
             'port' => 'int',
             'grpc' => 'array',
             'version' => 'string',
+            'cloud_name' => 'string',
         ])]
         array $config = []
     ) {
@@ -69,9 +72,16 @@ class Config
         isset($config['port']) && $this->port = (int) $config['port'];
         isset($config['version']) && $this->version = (string) $config['version'];
         isset($config['grpc']) && $this->grpc = array_replace($this->grpc, $config['grpc']);
+        isset($config['cloud_name']) && $this->cloudName = CloudName::safeFrom($config['cloud_name']);
     }
 
-    public function __set($name, $value)
+    /**
+     * 设置属性值  AOP update jmiy 2026-10-16
+     * @param mixed $name 属性
+     * @param mixed $value 属性值
+     * @return $this 本对象
+     */
+    public function __set(mixed $name, mixed $value)
     {
         $this->{$name} = $value;
 
@@ -126,5 +136,10 @@ class Config
     public function getVersion(): string
     {
         return $this->version;
+    }
+
+    public function getCloudName(): ?CloudName
+    {
+        return $this->cloudName;
     }
 }
