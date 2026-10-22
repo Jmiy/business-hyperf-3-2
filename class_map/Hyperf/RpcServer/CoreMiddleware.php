@@ -48,11 +48,6 @@ class CoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
      */
     protected function createDispatcher(string $serverName): Dispatcher
     {
-//        $factory = make(DispatcherFactory::class, [
-//            'pathGenerator' => $this->protocol->getPathGenerator(),
-//        ]);
-//        return $factory->getDispatcher($serverName);
-
         /* AOP handle start */
         $factory = $this->container->get(DispatcherFactory::class);
         return $factory->getDispatcher($serverName, $this->protocol->getPathGenerator());

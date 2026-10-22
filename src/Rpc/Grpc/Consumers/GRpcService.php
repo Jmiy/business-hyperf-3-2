@@ -53,8 +53,7 @@ class GRpcService extends BaseConsumer
      */
     public static function __callStatic(string $name, array $arguments): mixed
     {
-        $deserialize = $arguments[0];
-        unset($arguments[0]);
+        $deserialize = array_shift($arguments);
 
         $arguments = array_values($arguments);
 

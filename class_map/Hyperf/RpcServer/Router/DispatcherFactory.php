@@ -136,12 +136,33 @@ class DispatcherFactory
 
         $publicMethods = ReflectionManager::reflectClass($className)->getMethods(ReflectionMethod::IS_PUBLIC);
 
-        foreach ($publicMethods as $reflectionMethod) {
+        foreach ($publicMethods as $index =>$reflectionMethod) {
             $methodName = $reflectionMethod->getName();
-            if (Str::startsWith($methodName, '__')) {
-                continue;
+            if ($methodName == '__call') {
+                unset($publicMethods[$index]);
+                $publicMethods[] = $reflectionMethod;
+                break;
             }
-            $path = $this->pathGenerator->generate($prefix, $methodName);
+        }
+
+//        foreach ($publicMethods as $index => $reflectionMethod) {
+//            $methodName = $reflectionMethod->getName();
+//            if ($methodName == '__call') {
+//                $publicMethods = [$reflectionMethod];
+//                break;
+//            }
+//        }
+        $publicMethods = array_values($publicMethods);
+
+        foreach ($publicMethods as $reflectionMethod) {
+            $methodName = $method = $reflectionMethod->getName();
+            if (Str::startsWith($methodName, '__')) {
+                if ($methodName != '__call') {
+                    continue;
+                }
+                $method = '{__method__:.+}';
+            }
+            $path = $this->pathGenerator->generate($prefix, $method);
             $router->addRoute($path, [
                 $className,
                 $methodName,

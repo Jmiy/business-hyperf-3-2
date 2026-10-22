@@ -35,10 +35,6 @@ use Hyperf\Database\Query\Processors\PostgresProcessor;
 use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
 use Hyperf\Database\Schema\PostgresBuilder;
 use Hyperf\Engine\Signal;
-use Hyperf\Grpc\PathGenerator;
-use Hyperf\GrpcClient\Request;
-use Hyperf\GrpcServer\Exception\Handler\GrpcExceptionHandler;
-use Hyperf\JsonRpc\JsonRpcHttpTransporter;
 use Hyperf\Nacos\Config;
 use Hyperf\RateLimit\Aspect\RateLimitAnnotationAspect;
 use Hyperf\Redis\Pool\RedisPool;
@@ -58,7 +54,14 @@ use Hyperf\ServiceGovernance\ServiceManager;
 
 use Hyperf\RpcServer\CoreMiddleware;
 use Hyperf\RpcServer\Router\DispatcherFactory;
+use Hyperf\JsonRpc\CoreMiddleware as JsonRpcCoreMiddleware;
+use Hyperf\JsonRpc\JsonRpcHttpTransporter;
+use Hyperf\RpcMultiplex\CoreMiddleware as RpcMultiplexCoreMiddleware;
+
+use Hyperf\Grpc\PathGenerator;
 use Hyperf\GrpcServer\CoreMiddleware as GrpcCoreMiddleware;
+use Hyperf\GrpcServer\Exception\Handler\GrpcExceptionHandler;
+use Hyperf\GrpcClient\Request;
 
 use function Hyperf\Support\value;
 
@@ -126,11 +129,6 @@ class ConfigProvider
 
                         // RedisPool::class => __DIR__ . '/../class_map/Hyperf/Redis/Pool/RedisPool.php',
 
-                        JsonRpcHttpTransporter::class => __DIR__ . '/../class_map/Hyperf/JsonRpc/JsonRpcHttpTransporter.php',
-                        PathGenerator::class => __DIR__ . '/../class_map/Hyperf/Grpc/PathGenerator.php',
-                        Request::class => __DIR__ . '/../class_map/Hyperf/GrpcClient/Request.php',
-                        GrpcExceptionHandler::class => __DIR__ . '/../class_map/Hyperf/GrpcServer/Exception/Handler/GrpcExceptionHandler.php',
-
                         ObjectVersionListInfo::class => __DIR__ . '/../class_map/OSS/Model/ObjectVersionListInfo.php',
                         SignerV1::class => __DIR__ . '/../class_map/OSS/Signer/SignerV1.php',
                         SignerV4::class => __DIR__ . '/../class_map/OSS/Signer/SignerV4.php',
@@ -141,7 +139,14 @@ class ConfigProvider
 
                         CoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/RpcServer/CoreMiddleware.php',
                         DispatcherFactory::class => __DIR__ . '/../class_map/Hyperf/RpcServer/Router/DispatcherFactory.php',
+                        JsonRpcCoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/JsonRpc/CoreMiddleware.php',
+                        JsonRpcHttpTransporter::class => __DIR__ . '/../class_map/Hyperf/JsonRpc/JsonRpcHttpTransporter.php',
+                        RpcMultiplexCoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/RpcMultiplex/CoreMiddleware.php',
+
+                        PathGenerator::class => __DIR__ . '/../class_map/Hyperf/Grpc/PathGenerator.php',
                         GrpcCoreMiddleware::class => __DIR__ . '/../class_map/Hyperf/GrpcServer/CoreMiddleware.php',
+                        GrpcExceptionHandler::class => __DIR__ . '/../class_map/Hyperf/GrpcServer/Exception/Handler/GrpcExceptionHandler.php',
+                        Request::class => __DIR__ . '/../class_map/Hyperf/GrpcClient/Request.php',
                     ],
                 ],
             ],

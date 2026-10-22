@@ -56,6 +56,7 @@ class CoreMiddleware extends HttpCoreMiddleware
     }
 
     /**
+     * AOP update jmiy 2026-10-20
      * Process an incoming server request and return a response, optionally delegating
      * response creation to a handler.
      */
@@ -83,7 +84,19 @@ class CoreMiddleware extends HttpCoreMiddleware
                         $grpcMessage = 'Action not exist.';
                         return $this->handleResponse(null, 200, StatusCode::INTERNAL, $grpcMessage);
                     }
-                    $parameters = $this->parseMethodParameters($controller, $action, $dispatched->params);
+
+                    /* AOP handle start */
+                    $_action = $action;
+                    if ($action == '__call') {
+                        $key = '__method__';
+                        $action = array_key_exists($key, $dispatched->params) ? $dispatched->params[$key] : '';
+                        if (! method_exists($controller, $action)) {
+                            $_action .= '__';
+                        }
+                    }
+
+                    $parameters = $this->parseMethodParameters($controller, $_action, $dispatched->params);
+                    /* AOP handle end */
                     $result = $controllerInstance->{$action}(...$parameters);
                 }
 
@@ -100,15 +113,20 @@ class CoreMiddleware extends HttpCoreMiddleware
         }
     }
 
+    /**
+     * AOP update jmiy 2026-10-20
+     * @param string $serverName
+     * @return Dispatcher
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     protected function createDispatcher(string $serverName): Dispatcher
     {
         if ($this->protocol) {
-//            $factory = make(DispatcherFactory::class, [
-//                'pathGenerator' => $this->protocol->getPathGenerator(),
-//            ]);
-//            return $factory->getDispatcher($serverName);
+            /* AOP handle start */
             $factory = $this->container->get(DispatcherFactory::class);
             return $factory->getDispatcher($serverName, $this->protocol->getPathGenerator());
+            /* AOP handle end */
         }
 
         return parent::createDispatcher($serverName);
