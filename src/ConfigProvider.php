@@ -16,7 +16,6 @@ namespace Business\Hyperf;
 use Business\Hyperf\Utils\Redis\Lua\Contracts\LuaInterface;
 use Business\Hyperf\Utils\Redis\Lua\LuaFactory;
 use GuzzleHttp\Client;
-// use Hyperf\AsyncQueue\Driver\Driver;
 use Hyperf\AsyncQueue\Driver\RedisDriver as AsyncQueueRedisDriver;
 use Hyperf\Cache\Driver\RedisDriver;
 use Hyperf\Cache\Helper\StringHelper;
@@ -108,9 +107,12 @@ class ConfigProvider
                         HasManyThrough::class => __DIR__ . '/../class_map/Hyperf/Database/Model/Relations/HasManyThrough.php',
 
                         Client::class => __DIR__ . '/../class_map/GuzzleHttp/Client.php',
+
+                        // 缓存相关 AOP
                         RedisDriver::class => __DIR__ . '/../class_map/Hyperf/Cache/Driver/RedisDriver.php',
                         StringHelper::class => __DIR__ . '/../class_map/Hyperf/Cache/Helper/StringHelper.php',
-                        // Driver::class => __DIR__ . '/../class_map/Hyperf/AsyncQueue/Driver/Driver.php',
+
+                        // 消息队列相关 AOP
                         AsyncQueueRedisDriver::class => __DIR__ . '/../class_map/Hyperf/AsyncQueue/Driver/RedisDriver.php',
 
                         Concurrent::class => __DIR__ . '/../class_map/Hyperf/Coroutine/Concurrent.php',
