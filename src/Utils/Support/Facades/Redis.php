@@ -49,14 +49,7 @@ class Redis
      */
     public static function getRedis(string $poolName = 'default')
     {
-        $container = ApplicationContext::getContainer();
-        $redisFactory = $container->get(RedisFactory::class);
-
-        $db = config('redis.' . $poolName . '.db');
-        $redis = $redisFactory->get($poolName);
-        $redis->select($db);
-
-        return $redis;
+        return ApplicationContext::getContainer()->get(RedisFactory::class)->get($poolName);
     }
 
     /**
