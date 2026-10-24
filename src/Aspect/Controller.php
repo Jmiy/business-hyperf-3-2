@@ -91,9 +91,10 @@ class Controller extends AbstractAspect
         if (isset($classAnnotations[AutoController::class])) {
             $result['aop'] = $proceedingJoinPoint->getReflectMethod()->isPublic();
         } else if (isset($classAnnotations[AnnotationController::class])) {
-
             $result['aop'] = false;
+        }
 
+        if(isset($classAnnotations[AutoController::class]) || isset($classAnnotations[AnnotationController::class])){
             $mappingAnnotationClasses = [
                 RequestMapping::class,
                 GetMapping::class,
