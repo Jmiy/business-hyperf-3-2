@@ -14,17 +14,18 @@ namespace Hyperf\RateLimit\Aspect;
 
 use bandwidthThrottle\tokenBucket\storage\StorageException;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Coroutine\Coroutine;
 use Hyperf\Di\Aop\AroundInterface;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\RateLimit\Annotation\RateLimit;
 use Hyperf\RateLimit\Exception\RateLimitException;
 use Hyperf\RateLimit\Handler\RateLimitHandler;
-use Swoole\Coroutine;
 
+use function Hyperf\Tappable\tap;
 use function Hyperf\Collection\data_get;
 use function Hyperf\Config\config;
-use function Hyperf\Tappable\tap;
+use function Hyperf\Support\make;
 
 class RateLimitAnnotationAspect implements AroundInterface
 {
@@ -50,7 +51,7 @@ class RateLimitAnnotationAspect implements AroundInterface
      */
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
-        $annotation = $this->getWeightingAnnotation($this->getAnnotations($proceedingJoinPoint), $proceedingJoinPoint);
+        $annotation = $this->getWeightingAnnotation($this->getAnnotations($proceedingJoinPoint));
 
         $bucketKey = $annotation->key;
         if (is_callable($bucketKey)) {
@@ -79,7 +80,7 @@ class RateLimitAnnotationAspect implements AroundInterface
         }
 
         if (! $annotation->limitCallback || ! is_callable($annotation->limitCallback)) {
-            throw new RateLimitException('Service Unavailable Rate Limit.', 503);
+            throw new RateLimitException('Service Unavailable.', 503);
         }
         return call_user_func($annotation->limitCallback, $seconds, $proceedingJoinPoint);
     }
@@ -87,9 +88,15 @@ class RateLimitAnnotationAspect implements AroundInterface
     /**
      * @param RateLimit[] $annotations
      */
-    public function getWeightingAnnotation(array $annotations, ProceedingJoinPoint $proceedingJoinPoint): RateLimit
+    public function getWeightingAnnotation(array $annotations): RateLimit
     {
-        $property = array_merge($this->annotationProperty, $this->config);
+        $property = $this->annotationProperty;
+        foreach ($this->annotationProperty as $key => $value) {
+            if (! empty($this->config[$key])) {
+                $property[$key] = $this->config[$key];
+            }
+        }
+
         /** @var null|RateLimit $annotation */
         foreach ($annotations as $annotation) {
             if (! $annotation) {
@@ -97,15 +104,6 @@ class RateLimitAnnotationAspect implements AroundInterface
             }
             $property = array_merge($property, array_filter(get_object_vars($annotation)));
         }
-
-        $rateLimitConfig = data_get($proceedingJoinPoint->arguments, ['keys', 'extendData', 'rate_limit']);
-        if ($rateLimitConfig !== null) {
-            $rateLimitConfig = is_array($rateLimitConfig) ? $rateLimitConfig : config($rateLimitConfig);
-            if ($rateLimitConfig) {
-                $property = array_merge($property, array_filter($rateLimitConfig));
-            }
-        }
-
         return tap(new RateLimit(), static function (RateLimit $rateLimit) use ($property) {
             foreach ($property as $key => $value) {
                 $rateLimit->{$key} = $value;
@@ -113,12 +111,35 @@ class RateLimitAnnotationAspect implements AroundInterface
         });
     }
 
+    /**
+     * AOP update jmiy 2026-10-24
+     * @param ProceedingJoinPoint $proceedingJoinPoint
+     * @return array
+     */
     public function getAnnotations(ProceedingJoinPoint $proceedingJoinPoint): array
     {
+        /* AOP handle start */
+        $rateLimit = null;
+        $rateLimitConfig = data_get($proceedingJoinPoint->arguments, ['keys', 'extendData', 'rate_limit'],data_get($proceedingJoinPoint->arguments, ['keys', 'context', 'rate_limit']));
+        if ($rateLimitConfig !== null) {
+            $rateLimitConfig = is_array($rateLimitConfig) ? $rateLimitConfig : config($rateLimitConfig);
+            if ($rateLimitConfig) {
+                $annotationProperty = $this->annotationProperty;
+                foreach ($this->annotationProperty as $key => $value) {
+                    if (isset($rateLimitConfig[$key]) && ! empty($rateLimitConfig[$key])) {
+                        $annotationProperty[$key] = $rateLimitConfig[$key];
+                    }
+                }
+                $rateLimit = make(RateLimit::class, $annotationProperty);
+            }
+        }
+        /* AOP handle end */
+
         $metadata = $proceedingJoinPoint->getAnnotationMetadata();
         return [
             $metadata->class[RateLimit::class] ?? null,
             $metadata->method[RateLimit::class] ?? null,
+            $rateLimit,
         ];
     }
 
