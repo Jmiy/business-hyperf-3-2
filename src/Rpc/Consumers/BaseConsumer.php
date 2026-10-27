@@ -48,10 +48,6 @@ class BaseConsumer
     /**
      * Handle dynamic, static calls to the object.
      *
-     * @param string $name
-     * @param array $arguments
-     * @return mixed
-     *
      * @throws RuntimeException
      */
     public function __call(string $name, array $arguments): mixed
@@ -62,8 +58,6 @@ class BaseConsumer
     /**
      * Handle dynamic, static calls to the object.
      *
-     * @param string $name
-     * @param array $arguments
      * @return mixed
      *
      * @throws RuntimeException
@@ -71,12 +65,8 @@ class BaseConsumer
     public static function __callStatic(string $name, array $arguments)
     {
         $rpcContext = static::getRpcContext();
-
         static::setRpcContext($rpcContext);
-
-//        return static::getInstance()->__request($name, $arguments);
-//        var_dump(__METHOD__, $name,$arguments);
-        return static::getInstance()->$name(...$arguments);
+        return static::getInstance()->{$name}(...$arguments);
     }
 
     public static function setHeaders(array $context = [])

@@ -20,8 +20,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
 use Throwable;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Config\config;
+use function Hyperf\Collection\data_get;
 
 class Redis
 {
@@ -53,26 +52,23 @@ class Redis
     }
 
     /**
-     * Adds a values to the set value stored at key. 添加集合元素 支持设置缓存时长
+     * Add one or more values to a Redis SET key.
      *
-     * @param $key 集合key
-     * @param array $value 集合元素
-     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
-     * @param string $poolName 连接池
-     * @return array|bool|int The number of elements added to the set.
-     *                        If this value is already in the set, FALSE is returned
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Throwable
+     * @param string $key         The key name
+     * @param mixed  $value       A value to add to the set.
+     * @param mixed $other_values One or more additional values to add
      *
-     * @see    https://redis.io/commands/sadd
+     * @return \Redis|int|false|array The number of values added to the set.
+     *
+     * @see https://redis.io/docs/latest/commands/sadd/
+     *
      * @example
-     * <pre>
-     * $redis->sAdd('k', 'v1');                // int(1)
-     * $redis->sAdd('k', 'v1', 'v2', 'v3');    // int(2)
-     * </pre>
+     * $redis->del('myset');
+     *
+     * $redis->sadd('myset', 'foo', 'bar', 'baz');
+     * $redis->sadd('myset', 'foo', 'new');
      */
-    public static function sAdd($key, array $value, ?int $seconds = null, string $poolName = 'default')
+    public static function sAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
     {
         $instance = static::getRedis($poolName);
 
@@ -86,127 +82,116 @@ class Redis
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 
     /**
-     * Fills in a whole hash. Non-string values are converted to string, using the standard (string) cast.
-     * NULL values are stored as empty strings.
+     * Add or update one or more hash fields and values
      *
-     * @param array $dictionary key → value array
-     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
-     * @param string $poolName 连接池
-     * @param mixed $key
-     * @return array|bool
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Throwable
+     * @param string $key        The hash to create/update
+     * @param array  $fieldvals  An associative array with fields and their values.
      *
-     * @see    https://redis.io/commands/hmset
-     * @example
-     * <pre>
-     * $redis->del('user:1');
-     * $redis->hMSet('user:1', array('name' => 'Joe', 'salary' => 2000));
-     * $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
-     * </pre>
+     * @return \Redis|bool|array True if the operation was successful
+     *
+     * @see https://redis.io/docs/latest/commands/hmset/
+     *
+     * @example $redis->hmset('updates', ['status' => 'starting', 'elapsed' => 0]);
      */
-    public static function hmset($key, array $dictionary, ?int $seconds = null, string $poolName = 'default')
+    public static function hmset(string $key, array $fieldvals, ?int $seconds = null, string $poolName = 'default'): \Redis|bool|array
     {
         $instance = static::getRedis($poolName);
 
         if ($seconds === null) {
-            return $instance->hmset($key, $dictionary);
+            return $instance->hmset($key, $fieldvals);
         }
 
         $instance->multi();
-        $instance->hmset($key, $dictionary);
+        $instance->hmset($key, $fieldvals);
         $instance->pexpire($key, $seconds * 1000);
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 
     /**
-     * Increments the value of a member from a hash by a given amount.
+     * Increment a hash field's value by an integer
      *
-     * @param string $key
-     * @param string $hashKey
-     * @param int $value (integer) value that will be added to the member's value
-     * @param null|int $seconds 缓存时间  单位秒(支持：0.02)
-     * @param string $poolName 连接池
+     * @param string $key   The hash to modify
+     * @param string $field The field to increment
+     * @param int    $value How much to increment the value.
      *
-     * @return array|int the new value
+     * @return \Redis|int|false|array The new value of the field.
      *
-     * @link    https://redis.io/commands/hincrby
+     * @see https://redis.io/docs/latest/commands/hincrby/
+     *
      * @example
-     * <pre>
-     * $redis->del('h');
-     * $redis->hIncrBy('h', 'x', 2); // returns 2: h[x] = 2 now.
-     * $redis->hIncrBy('h', 'x', 1); // h[x] ← 2 + 1. Returns 3
-     * </pre>
+     * $redis->hMSet('player:1', ['name' => 'Alice', 'score' => 0]);
+     * $redis->hincrby('player:1', 'score', 10);
      */
-    public static function hIncrBy($key, $hashKey, $value, ?int $seconds = null, string $poolName = 'default')
+    public static function hIncrBy(string $key, string $field, int $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
     {
         $instance = static::getRedis($poolName);
 
         if ($seconds === null) {
-            return $instance->hIncrBy($key, $hashKey, $value);
+            return $instance->hIncrBy($key, $field, $value);
         }
 
         $instance->multi();
-        $instance->hIncrBy($key, $hashKey, $value);
+        $instance->hIncrBy($key, $field, $value);
         $instance->pexpire($key, $seconds * 1000);
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 
     /**
-     * Adds the specified member with a given score to the sorted set stored at key.
+     * Add one or more elements and scores to a Redis sorted set.
      *
-     * @param string $key Required key
+     * @param string      $key                  The sorted set in question.
+     * @param array|float $score_or_options     Either the score for the first element, or an array of options.
+     *                                           ```php
+     *                                           $options = [
+     *                                               'NX',       # Only update elements that already exist
+     *                                               'NX',       # Only add new elements but don't update existing ones.
      *
-     * @return int Number of values added
+     *                                               'LT'        # Only update existing elements if the new score is
+     *                                                           # less than the existing one.
+     *                                               'GT'        # Only update existing elements if the new score is
+     *                                                           # greater than the existing one.
      *
-     * @see    https://redis.io/commands/zadd
+     *                                               'CH'        # Instead of returning the number of elements added,
+     *                                                           # Redis will return the number Of elements that were
+     *                                                           # changed in the operation.
+     *
+     *                                               'INCR'      # Instead of setting each element to the provide score,
+     *                                                           # increment the element by the
+     *                                                           # provided score, much like ZINCRBY.  When this option
+     *                                                           # is passed, you may only send a single score and member.
+     *                                           ];
+     *                                          ```
+     *                                           Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
+     *                                                  will send whichever one is last in the options array.
+     * @param mixed       $more_scores_and_mems A variadic number of additional scores and members.
+     *
+     * @return \Redis|int|float|false|array The return value varies depending on the options passed.
+     *
+     * Following is information about the options that may be passed as the second argument:
+     *
+     * @see https://redis.io/docs/latest/commands/zadd/
+     *
      * @example
-     * <pre>
-     * <pre>
-     * $redis->zAdd('z', 1, 'v1', 2, 'v2', 3, 'v3', 4, 'v4' );  // int(2)
-     * $redis->zRem('z', 'v2', 'v3');                           // int(2)
-     * $redis->zAdd('z', ['NX'], 5, 'v5');                      // int(1)
-     * $redis->zAdd('z', ['NX'], 6, 'v5');                      // int(0)
-     * $redis->zAdd('z', 7, 'v6');                              // int(1)
-     * $redis->zAdd('z', 8, 'v6');                              // int(0)
-     *
-     * var_dump( $redis->zRange('z', 0, -1) );
-     * // Output:
-     * // array(4) {
-     * //   [0]=> string(2) "v1"
-     * //   [1]=> string(2) "v4"
-     * //   [2]=> string(2) "v5"
-     * //   [3]=> string(2) "v8"
-     * // }
-     *
-     * var_dump( $redis->zRange('z', 0, -1, true) );
-     * // Output:
-     * // array(4) {
-     * //   ["v1"]=> float(1)
-     * //   ["v4"]=> float(4)
-     * //   ["v5"]=> float(5)
-     * //   ["v6"]=> float(8)
-     * </pre>
-     * </pre>
+     * $redis->zadd('zs', 1, 'first', 2, 'second', 3, 'third');
+     * $redis->zAdd('zs', ['XX'], 8, 'second', 99, 'new-element');
      */
-    public static function zAdd($key, array $value, ?int $seconds = null, string $poolName = 'default')
+    public static function zAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|float|false|array
     {
         $instance = static::getRedis($poolName);
 
@@ -220,31 +205,27 @@ class Redis
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 
     /**
-     * Increment the number stored at key by one.
-     * If the second argument is filled, it will be used as the integer value of the increment.
+     * Increment a key by a specific integer value
      *
-     * @param string $key key
-     * @param int $value value that will be added to key (only for incrBy)
+     * @see https://redis.io/docs/latest/commands/incrby/
      *
-     * @return int the new value
+     * @param string $key   The key to increment.
+     * @param int    $value The amount to increment.
      *
-     * @see    https://redis.io/commands/incrby
      * @example
-     * <pre>
-     * $redis->incr('key1');        // key1 didn't exists, set to 0 before the increment and now has the value 1
-     * $redis->incr('key1');        // 2
-     * $redis->incr('key1');        // 3
-     * $redis->incr('key1');        // 4
-     * $redis->incrBy('key1', 10);  // 14
-     * </pre>
+     * $redis->set('primes', 2);
+     * $redis->incrby('primes', 1);
+     * $redis->incrby('primes', 2);
+     * $redis->incrby('primes', 2);
+     * $redis->incrby('primes', 4);
      */
-    public static function incrBy($key, $value, ?int $seconds = null, string $poolName = 'default')
+    public static function incrBy(string $key, int $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
     {
         $instance = static::getRedis($poolName);
 
@@ -258,47 +239,41 @@ class Redis
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 
     /**
-     * Changes a single bit of a string.
+     * Set a specific bit in a Redis string to zero or one
      *
-     * @param string $key
-     * @param int $offset
-     * @param bool|int $value bool or int (1 or 0)
+     * @see https://redis.io/docs/latest/commands/setbit/
      *
-     * @return false|int|Redis 0 or 1, the value of the bit before it was set or Redis if in multimode
+     * @param string $key    The Redis STRING key to modify
+     * @param bool   $value  Whether to set the bit to zero or one.
      *
-     * @throws RedisException
+     * @return \Redis|int|false|array The original value of the bit or false on failure.
      *
-     * @see    https://redis.io/commands/setbit
      * @example
-     * <pre>
-     * $redis->set('key', "*");     // ord("*") = 42 = 0x2f = "0010 1010"
-     * $redis->setBit('key', 5, 1); // returns 0
-     * $redis->setBit('key', 7, 1); // returns 0
-     * $redis->get('key');          // chr(0x2f) = "/" = b("0010 1111")
-     * </pre>
+     * $redis->set('foo', 'bar');
+     * $redis->setbit('foo', 7, 1);
      */
-    public static function setBit($key, $offset, $value, ?int $seconds = null, string $poolName = 'default')
+    public static function setBit(string $key, int $idx, bool $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
     {
         $instance = static::getRedis($poolName);
 
         if ($seconds === null) {
-            return $instance->setBit($key, $offset, $value);
+            return $instance->setBit($key, $idx, $value);
         }
 
         $instance->multi();
-        $instance->setBit($key, $offset, $value);
+        $instance->setBit($key, $idx, $value);
         $instance->pexpire($key, $seconds * 1000);
         $manyResult = $instance->exec();
 
         return [
-            'result' => data_get($manyResult, 0),
-            'pexpire' => data_get($manyResult, 1),
+            'result' => data_get($manyResult, [0]),
+            'pexpire' => data_get($manyResult, [1]),
         ];
     }
 }

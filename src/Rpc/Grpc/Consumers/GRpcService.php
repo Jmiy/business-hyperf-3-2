@@ -45,10 +45,6 @@ class GRpcService extends BaseConsumer
     /**
      * Handle dynamic, static calls to the object.
      *
-     * @param string $name
-     * @param array $arguments
-     * @return mixed
-     *
      * @throws RuntimeException
      */
     public static function __callStatic(string $name, array $arguments): mixed

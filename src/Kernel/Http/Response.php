@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Kernel\Http;
 
-use BadMethodCallException;
 use Hyperf\Context\ResponseContext;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\HttpMessage\Cookie\Cookie;
@@ -33,6 +32,16 @@ class Response
     public function __construct(protected ContainerInterface $container)
     {
         $this->response = $container->get(ResponseInterface::class);
+    }
+
+    public function __call(string $name, array $arguments): mixed
+    {
+        return $this->response->{$name}(...$arguments);
+    }
+
+    public static function __callStatic($method, $parameters)
+    {
+        return HttpServerResponse::{$method}(...$parameters);
     }
 
     public function success(mixed $data = []): ResponsePlusInterface
@@ -79,15 +88,5 @@ class Response
     public function response(): ResponsePlusInterface
     {
         return ResponseContext::get();
-    }
-
-    public function __call(string $name, array $arguments): mixed
-    {
-        return $this->response->{$name}(...$arguments);
-    }
-
-    public static function __callStatic($method, $parameters)
-    {
-        return HttpServerResponse::{$method}(...$parameters);
     }
 }

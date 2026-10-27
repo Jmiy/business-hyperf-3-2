@@ -13,6 +13,10 @@ declare(strict_types=1);
 namespace Business\Hyperf;
 
 // use Business\Hyperf\Process\RestartServiceProcess;
+use Business\Hyperf\Rpc\Mcp\DataFormatter;
+use Business\Hyperf\Rpc\Mcp\DataFormatterFactory;
+use Business\Hyperf\Rpc\Mcp\Listener\RegisterProtocolListener;
+use Business\Hyperf\Rpc\Mcp\Listener\RegisterServiceListener as RpcMcpServiceListener;
 use Business\Hyperf\Utils\Redis\Lua\Contracts\LuaInterface;
 use Business\Hyperf\Utils\Redis\Lua\LuaFactory;
 use GuzzleHttp\Client;
@@ -34,33 +38,26 @@ use Hyperf\Database\Query\Processors\PostgresProcessor;
 use Hyperf\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
 use Hyperf\Database\Schema\PostgresBuilder;
 use Hyperf\Engine\Signal;
+use Hyperf\Grpc\PathGenerator;
+use Hyperf\GrpcClient\Request;
+use Hyperf\GrpcServer\CoreMiddleware as GrpcCoreMiddleware;
+use Hyperf\GrpcServer\Exception\Handler\GrpcExceptionHandler;
+use Hyperf\JsonRpc\CoreMiddleware as JsonRpcCoreMiddleware;
+use Hyperf\JsonRpc\JsonRpcHttpTransporter;
 use Hyperf\Nacos\Config;
+use Hyperf\Pool\Pool;
 use Hyperf\RateLimit\Aspect\RateLimitAnnotationAspect;
 use Hyperf\Redis\Pool\RedisPool;
+use Hyperf\RpcMultiplex\CoreMiddleware as RpcMultiplexCoreMiddleware;
+use Hyperf\RpcServer\CoreMiddleware;
+use Hyperf\RpcServer\Router\DispatcherFactory;
 use Hyperf\ServiceGovernance\Listener\RegisterServiceListener;
+use Hyperf\ServiceGovernance\ServiceManager;
 use Hyperf\ServiceGovernanceNacos\Client as ServiceGovernanceNacosClient;
 use Hyperf\ServiceGovernanceNacos\NacosDriver;
 use OSS\Model\ObjectVersionListInfo;
 use OSS\Signer\SignerV1;
 use OSS\Signer\SignerV4;
-use Hyperf\Pool\Pool;
-
-use Business\Hyperf\Rpc\Mcp\DataFormatter;
-use Business\Hyperf\Rpc\Mcp\DataFormatterFactory;
-use Business\Hyperf\Rpc\Mcp\Listener\RegisterProtocolListener;
-use Business\Hyperf\Rpc\Mcp\Listener\RegisterServiceListener as RpcMcpServiceListener;
-use Hyperf\ServiceGovernance\ServiceManager;
-
-use Hyperf\RpcServer\CoreMiddleware;
-use Hyperf\RpcServer\Router\DispatcherFactory;
-use Hyperf\JsonRpc\CoreMiddleware as JsonRpcCoreMiddleware;
-use Hyperf\JsonRpc\JsonRpcHttpTransporter;
-use Hyperf\RpcMultiplex\CoreMiddleware as RpcMultiplexCoreMiddleware;
-
-use Hyperf\Grpc\PathGenerator;
-use Hyperf\GrpcServer\CoreMiddleware as GrpcCoreMiddleware;
-use Hyperf\GrpcServer\Exception\Handler\GrpcExceptionHandler;
-use Hyperf\GrpcClient\Request;
 
 use function Hyperf\Support\value;
 

@@ -23,7 +23,6 @@ class MetadataCollector
 
     /**
      * Retrieve the metadata via key.
-     * @param null|mixed $default
      */
     public static function get(string $key, mixed $default = null)
     {
@@ -32,7 +31,6 @@ class MetadataCollector
 
     /**
      * Set the metadata to holder.
-     * @param mixed $value
      */
     public static function set(string $key, mixed $value): void
     {

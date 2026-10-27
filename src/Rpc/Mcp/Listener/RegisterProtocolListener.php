@@ -12,14 +12,14 @@ declare(strict_types=1);
 
 namespace Business\Hyperf\Rpc\Mcp\Listener;
 
-use Hyperf\Event\Contract\ListenerInterface;
-use Hyperf\Rpc\ProtocolManager;
-use Hyperf\Framework\Event\BootApplication;
-use Business\Hyperf\Rpc\Mcp\PathGenerator\PathGenerator;
 use Business\Hyperf\Rpc\Mcp\DataFormatter;
+use Business\Hyperf\Rpc\Mcp\PathGenerator\PathGenerator;
 use Hyperf\Codec\Packer\JsonPacker;
+use Hyperf\Event\Contract\ListenerInterface;
+use Hyperf\Framework\Event\BootApplication;
 use Hyperf\JsonRpc\JsonRpcHttpTransporter;
 use Hyperf\JsonRpc\JsonRpcNormalizer;
+use Hyperf\Rpc\ProtocolManager;
 
 class RegisterProtocolListener implements ListenerInterface
 {

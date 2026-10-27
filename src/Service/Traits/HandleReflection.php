@@ -21,7 +21,6 @@ use function Hyperf\Collection\data_set;
 
 trait HandleReflection
 {
-
     /**
      * Constructs a ReflectionMethod.
      *
@@ -45,7 +44,7 @@ trait HandleReflection
         if (MetadataCollector::has($key)) {
             return MetadataCollector::get($key);
         }
-//        var_dump(__METHOD__);
+        //        var_dump(__METHOD__);
 
         // 通过反射获取当前方法的参数名
         $reflection = new ReflectionMethod($objectOrMethod, $method);
@@ -80,7 +79,7 @@ trait HandleReflection
 
     public static function getMethodParametersAsArray(string $service, string $method, array $args): array
     {
-//        $args = array_values($args);//将 $args 转换为索引数组
+        //        $args = array_values($args);//将 $args 转换为索引数组
         $reflectionMethod = static::getReflectionMethod($service, $method);
 
         // 将参数名与实际值组合（注意：值的数量可能少于参数名）

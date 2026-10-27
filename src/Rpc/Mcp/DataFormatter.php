@@ -42,7 +42,7 @@ class DataFormatter implements DataFormatterInterface
             'jsonrpc' => '2.0',
             'id' => $response->getId(),
             'result' => $response->getResult(),
-//            'context' => $this->context->getData(),
+            //            'context' => $this->context->getData(),
         ];
     }
 
@@ -64,7 +64,7 @@ class DataFormatter implements DataFormatterInterface
                 'message' => $response->getMessage(),
                 'data' => $exception,
             ],
-//            'context' => $this->context->getData(),
+            //            'context' => $this->context->getData(),
         ];
     }
 }

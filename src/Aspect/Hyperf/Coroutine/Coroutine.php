@@ -26,7 +26,6 @@ use Throwable;
 use function Hyperf\Collection\data_get;
 use function Hyperf\Config\config;
 use function Hyperf\Support\call;
-use function Hyperf\Support\make;
 
 #[Aspect(classes: [CoroutineCoroutine::class . '::create', CoroutineCoroutine::class . '::printLog'], annotations: [])]
 class Coroutine extends AbstractAspect

@@ -39,7 +39,7 @@ class BaseConsumerProcess extends ConsumerProcess
 
         $factory = $this->container->get(DriverFactory::class);
 
-//        $dd = [];
+        //        $dd = [];
         foreach ($_configs as $_pool => $item) {
             if (
                 $_pool != $this->pool
@@ -50,11 +50,11 @@ class BaseConsumerProcess extends ConsumerProcess
                 go(function () use ($driver) {
                     $driver->consume();
                 });
-//                $dd[] = $_pool;
+                //                $dd[] = $_pool;
             }
         }
 
-//        var_dump([$this->pool=>$dd]);
+        //        var_dump([$this->pool=>$dd]);
 
         parent::handle();
     }

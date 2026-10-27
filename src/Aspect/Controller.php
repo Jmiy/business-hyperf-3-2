@@ -21,18 +21,16 @@ use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
-use Hyperf\Di\ReflectionManager;
 use Hyperf\HttpServer\Annotation\AutoController;
 use Hyperf\HttpServer\Annotation\Controller as AnnotationController;
-
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\PatchMapping;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
 use Hyperf\HttpServer\Annotation\RequestMapping;
-
 use Hyperf\Logger\LoggerFactory;
+
 use function Hyperf\Collection\data_get;
 
 #[Aspect(classes: [AppExceptionHandler::class . '::handle'], annotations: [AnnotationController::class, AutoController::class])]
@@ -40,47 +38,47 @@ class Controller extends AbstractAspect
 {
     public function isAop(ProceedingJoinPoint $proceedingJoinPoint)
     {
-        $className = $proceedingJoinPoint->className;//当前被调用的类
-        $methodName = $proceedingJoinPoint->methodName;//当前被调用的函数
-//        $arguments = $proceedingJoinPoint->arguments;//当前被调用的函数参数
+        $className = $proceedingJoinPoint->className; // 当前被调用的类
+        $methodName = $proceedingJoinPoint->methodName; // 当前被调用的函数
+        //        $arguments = $proceedingJoinPoint->arguments;//当前被调用的函数参数
 
-//        ApplicationContext::getContainer()->get(LoggerFactory::class)->get('sys', 'sys')->info(
-//            __METHOD__,
-//            [
-//                'className' => $className,
-//                'methodName' => $methodName,
-//            ],
-//        );
+        //        ApplicationContext::getContainer()->get(LoggerFactory::class)->get('sys', 'sys')->info(
+        //            __METHOD__,
+        //            [
+        //                'className' => $className,
+        //                'methodName' => $methodName,
+        //            ],
+        //        );
 
         $key = 'aop::response::' . $className . '::' . $methodName;
         if (MetadataCollector::has($key)) {
             return MetadataCollector::get($key);
         }
 
-//        $classAnnotations = $proceedingJoinPoint->getAnnotationMetadata()->class;//当前被调用的类的注解
-//        $methodAnnotations = $proceedingJoinPoint->getAnnotationMetadata()->method;//当前被调用的函数的注解
+        //        $classAnnotations = $proceedingJoinPoint->getAnnotationMetadata()->class;//当前被调用的类的注解
+        //        $methodAnnotations = $proceedingJoinPoint->getAnnotationMetadata()->method;//当前被调用的函数的注解
         $metadata = AnnotationCollector::get($className);
-        $classAnnotations = $metadata['_c'] ?? [];//当前被调用的类的注解
-        $methodAnnotations = $metadata['_m'][$methodName] ?? [];//当前被调用的函数的注解
-//        var_dump(
-//            __METHOD__,
-//            [
-//                'className' => $className,
-//                'methodName' => $methodName,
-//                'classAnnotations' => $classAnnotations,
-//                'methodAnnotations' => $methodAnnotations,
-//            ],
-//        );
-//
-//        ApplicationContext::getContainer()->get(LoggerFactory::class)->get('sys', 'sys')->info(
-//            __METHOD__,
-//            [
-//                'className' => $className,
-//                'methodName' => $methodName,
-//                'classAnnotations' => $classAnnotations,
-//                'methodAnnotations' => $methodAnnotations,
-//            ],
-//        );
+        $classAnnotations = $metadata['_c'] ?? []; // 当前被调用的类的注解
+        $methodAnnotations = $metadata['_m'][$methodName] ?? []; // 当前被调用的函数的注解
+        //        var_dump(
+        //            __METHOD__,
+        //            [
+        //                'className' => $className,
+        //                'methodName' => $methodName,
+        //                'classAnnotations' => $classAnnotations,
+        //                'methodAnnotations' => $methodAnnotations,
+        //            ],
+        //        );
+        //
+        //        ApplicationContext::getContainer()->get(LoggerFactory::class)->get('sys', 'sys')->info(
+        //            __METHOD__,
+        //            [
+        //                'className' => $className,
+        //                'methodName' => $methodName,
+        //                'classAnnotations' => $classAnnotations,
+        //                'methodAnnotations' => $methodAnnotations,
+        //            ],
+        //        );
 
         $result = [
             'aop' => true,
@@ -90,11 +88,11 @@ class Controller extends AbstractAspect
         // AnnotationController::class和AutoController::class 不可以同时使用在同一个类上面
         if (isset($classAnnotations[AutoController::class])) {
             $result['aop'] = $proceedingJoinPoint->getReflectMethod()->isPublic();
-        } else if (isset($classAnnotations[AnnotationController::class])) {
+        } elseif (isset($classAnnotations[AnnotationController::class])) {
             $result['aop'] = false;
         }
 
-        if(isset($classAnnotations[AutoController::class]) || isset($classAnnotations[AnnotationController::class])){
+        if (isset($classAnnotations[AutoController::class]) || isset($classAnnotations[AnnotationController::class])) {
             $mappingAnnotationClasses = [
                 RequestMapping::class,
                 GetMapping::class,
