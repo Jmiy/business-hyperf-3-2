@@ -54,11 +54,10 @@ class Redis
     /**
      * Add one or more values to a Redis SET key.
      *
-     * @param string $key         The key name
-     * @param mixed  $value       A value to add to the set.
-     * @param mixed $other_values One or more additional values to add
+     * @param string $key The key name
+     * @param mixed $value a value to add to the set
      *
-     * @return \Redis|int|false|array The number of values added to the set.
+     * @return array|false|int|\Redis the number of values added to the set
      *
      * @see https://redis.io/docs/latest/commands/sadd/
      *
@@ -68,7 +67,7 @@ class Redis
      * $redis->sadd('myset', 'foo', 'bar', 'baz');
      * $redis->sadd('myset', 'foo', 'new');
      */
-    public static function sAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
+    public static function sAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): array|false|int|\Redis
     {
         $instance = static::getRedis($poolName);
 
@@ -88,18 +87,18 @@ class Redis
     }
 
     /**
-     * Add or update one or more hash fields and values
+     * Add or update one or more hash fields and values.
      *
-     * @param string $key        The hash to create/update
-     * @param array  $fieldvals  An associative array with fields and their values.
+     * @param string $key The hash to create/update
+     * @param array $fieldvals an associative array with fields and their values
      *
-     * @return \Redis|bool|array True if the operation was successful
+     * @return array|bool|\Redis True if the operation was successful
      *
      * @see https://redis.io/docs/latest/commands/hmset/
      *
      * @example $redis->hmset('updates', ['status' => 'starting', 'elapsed' => 0]);
      */
-    public static function hmset(string $key, array $fieldvals, ?int $seconds = null, string $poolName = 'default'): \Redis|bool|array
+    public static function hmset(string $key, array $fieldvals, ?int $seconds = null, string $poolName = 'default'): array|bool|\Redis
     {
         $instance = static::getRedis($poolName);
 
@@ -119,13 +118,13 @@ class Redis
     }
 
     /**
-     * Increment a hash field's value by an integer
+     * Increment a hash field's value by an integer.
      *
-     * @param string $key   The hash to modify
+     * @param string $key The hash to modify
      * @param string $field The field to increment
-     * @param int    $value How much to increment the value.
+     * @param int $value how much to increment the value
      *
-     * @return \Redis|int|false|array The new value of the field.
+     * @return array|false|int|\Redis the new value of the field
      *
      * @see https://redis.io/docs/latest/commands/hincrby/
      *
@@ -133,7 +132,7 @@ class Redis
      * $redis->hMSet('player:1', ['name' => 'Alice', 'score' => 0]);
      * $redis->hincrby('player:1', 'score', 10);
      */
-    public static function hIncrBy(string $key, string $field, int $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
+    public static function hIncrBy(string $key, string $field, int $value, ?int $seconds = null, string $poolName = 'default'): array|false|int|\Redis
     {
         $instance = static::getRedis($poolName);
 
@@ -155,33 +154,9 @@ class Redis
     /**
      * Add one or more elements and scores to a Redis sorted set.
      *
-     * @param string      $key                  The sorted set in question.
-     * @param array|float $score_or_options     Either the score for the first element, or an array of options.
-     *                                           ```php
-     *                                           $options = [
-     *                                               'NX',       # Only update elements that already exist
-     *                                               'NX',       # Only add new elements but don't update existing ones.
+     * @param string $key the sorted set in question
      *
-     *                                               'LT'        # Only update existing elements if the new score is
-     *                                                           # less than the existing one.
-     *                                               'GT'        # Only update existing elements if the new score is
-     *                                                           # greater than the existing one.
-     *
-     *                                               'CH'        # Instead of returning the number of elements added,
-     *                                                           # Redis will return the number Of elements that were
-     *                                                           # changed in the operation.
-     *
-     *                                               'INCR'      # Instead of setting each element to the provide score,
-     *                                                           # increment the element by the
-     *                                                           # provided score, much like ZINCRBY.  When this option
-     *                                                           # is passed, you may only send a single score and member.
-     *                                           ];
-     *                                          ```
-     *                                           Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
-     *                                                  will send whichever one is last in the options array.
-     * @param mixed       $more_scores_and_mems A variadic number of additional scores and members.
-     *
-     * @return \Redis|int|float|false|array The return value varies depending on the options passed.
+     * @return array|false|float|int|\Redis The return value varies depending on the options passed.
      *
      * Following is information about the options that may be passed as the second argument:
      *
@@ -191,7 +166,7 @@ class Redis
      * $redis->zadd('zs', 1, 'first', 2, 'second', 3, 'third');
      * $redis->zAdd('zs', ['XX'], 8, 'second', 99, 'new-element');
      */
-    public static function zAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|float|false|array
+    public static function zAdd(string $key, array $value, ?int $seconds = null, string $poolName = 'default'): array|false|float|int|\Redis
     {
         $instance = static::getRedis($poolName);
 
@@ -211,12 +186,12 @@ class Redis
     }
 
     /**
-     * Increment a key by a specific integer value
+     * Increment a key by a specific integer value.
      *
      * @see https://redis.io/docs/latest/commands/incrby/
      *
-     * @param string $key   The key to increment.
-     * @param int    $value The amount to increment.
+     * @param string $key the key to increment
+     * @param int $value the amount to increment
      *
      * @example
      * $redis->set('primes', 2);
@@ -225,7 +200,7 @@ class Redis
      * $redis->incrby('primes', 2);
      * $redis->incrby('primes', 4);
      */
-    public static function incrBy(string $key, int $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
+    public static function incrBy(string $key, int $value, ?int $seconds = null, string $poolName = 'default'): array|false|int|\Redis
     {
         $instance = static::getRedis($poolName);
 
@@ -245,20 +220,20 @@ class Redis
     }
 
     /**
-     * Set a specific bit in a Redis string to zero or one
+     * Set a specific bit in a Redis string to zero or one.
      *
      * @see https://redis.io/docs/latest/commands/setbit/
      *
-     * @param string $key    The Redis STRING key to modify
-     * @param bool   $value  Whether to set the bit to zero or one.
+     * @param string $key The Redis STRING key to modify
+     * @param bool $value whether to set the bit to zero or one
      *
-     * @return \Redis|int|false|array The original value of the bit or false on failure.
+     * @return array|false|int|\Redis the original value of the bit or false on failure
      *
      * @example
      * $redis->set('foo', 'bar');
      * $redis->setbit('foo', 7, 1);
      */
-    public static function setBit(string $key, int $idx, bool $value, ?int $seconds = null, string $poolName = 'default'): \Redis|int|false|array
+    public static function setBit(string $key, int $idx, bool $value, ?int $seconds = null, string $poolName = 'default'): array|false|int|\Redis
     {
         $instance = static::getRedis($poolName);
 
