@@ -69,18 +69,35 @@ trait HandleReflection
         return $result;
     }
 
-    public static function getMethodParameterName($objectOrClass, $name)
+    /**
+     * 获取方法参数名.
+     * @param object|string $objectOrMethod Classname, object
+     * @param null|string $method name of the method if the first argument is a classname or an object
+     * @return mixed 方法参数名数据
+     * @throws ReflectionException
+     */
+    public static function getMethodParameterName(object|string $objectOrMethod, ?string $method = null): mixed
     {
         // 获取参数
-        $parameters = static::getReflectionMethod($objectOrClass, $name);
+        $parameters = static::getReflectionMethod($objectOrMethod, $method);
 
         return data_get($parameters, ['*', 'name']);
     }
 
-    public static function getMethodParametersAsArray(string $service, string $method, array $args): array
+    /**
+     * 获取方法参数名.
+     * @return mixed 方法参数名数据
+     * @throws ReflectionException
+     */
+    public static function getFunctionParameterName(object|string $objectOrMethod, ?string $method = null): mixed
+    {
+        return static::getMethodParameterName($objectOrMethod, $method);
+    }
+
+    public static function getMethodParametersAsArray(object|string $objectOrMethod, ?string $method = null, array $args = []): array
     {
         //        $args = array_values($args);//将 $args 转换为索引数组
-        $reflectionMethod = static::getReflectionMethod($service, $method);
+        $reflectionMethod = static::getReflectionMethod($objectOrMethod, $method);
 
         // 将参数名与实际值组合（注意：值的数量可能少于参数名）
         $result = [];
