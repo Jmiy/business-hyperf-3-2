@@ -23,7 +23,7 @@ use function Business\Hyperf\Utils\Collection\data_get;
 use function Hyperf\Collection\data_set;
 use function Hyperf\Support\call;
 
-#[Aspect(classes: [HyperfRedis::class . '::__call'], annotations: [])]
+//#[Aspect(classes: [HyperfRedis::class . '::__call'], annotations: [])]
 class Redis extends AbstractAspect
 {
     public function aop__call(ProceedingJoinPoint $proceedingJoinPoint)
