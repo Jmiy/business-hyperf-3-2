@@ -44,7 +44,7 @@ class NacosDriver extends AbstractDriver
             parent::createMessageFetcherLoop();
             return;
         }
-
+        /* AOP add start */
         $baseUri = $this->config->get('config_center.drivers.nacos.client.uri', $this->client->getConfig()->getBaseUri());
         $username = $this->config->get('config_center.drivers.nacos.client.username', $this->client->getConfig()->getUsername());
         $password = $this->config->get('config_center.drivers.nacos.client.password', $this->client->getConfig()->getPassword());
@@ -66,6 +66,7 @@ class NacosDriver extends AbstractDriver
         $this->client->getConfig()->baseUri = $baseUri;
         $this->client->getConfig()->username = $username;
         $this->client->getConfig()->password = $password;
+        /* AOP add end */
 
         //        $application = $this->client->getClient();
 
@@ -77,7 +78,7 @@ class NacosDriver extends AbstractDriver
             $tenant = $item['tenant'] ?? '';
             $type = $item['type'] ?? null;
 
-            /* 兼容配置中心独立配置的情况 start */
+            /* AOP add 兼容配置中心独立配置的情况 start */
             $address = $item['address'] ?? null;
             $consumerUsername = $item['username'] ?? null;
             $consumerPassword = $item['password'] ?? null;
@@ -123,7 +124,7 @@ class NacosDriver extends AbstractDriver
             if ($consumerPassword !== null) {
                 $this->client->getConfig()->password = $password;
             }
-            /* 兼容配置中心独立配置的情况 end */
+            /* AOP add 兼容配置中心独立配置的情况 end */
 
             $client = $application->grpc->get($tenant, Module::CONFIG);
             $client->listenConfig($group, $dataId, new ConfigChangeNotifyRequestHandler(function (ConfigQueryResponse $response) use ($key, $type) {

@@ -13,12 +13,13 @@ declare(strict_types=1);
 namespace Hyperf\Cache\Driver;
 
 use Hyperf\Cache\Exception\InvalidArgumentException;
-use Hyperf\Collection\Arr;
 use Hyperf\Redis\Redis;
 use Hyperf\Redis\RedisFactory;
 use Psr\Container\ContainerInterface;
 
-use function Business\Hyperf\Utils\Collection\data_get;
+use Hyperf\Collection\Arr;
+
+use function Hyperf\Collection\data_get;
 use function Hyperf\Collection\data_set;
 
 class RedisDriver extends Driver implements KeyCollectorInterface
@@ -30,10 +31,6 @@ class RedisDriver extends Driver implements KeyCollectorInterface
         parent::__construct($container, $config);
 
         $this->redis = $container->get(RedisFactory::class)->get($config['options']['pool'] ?? data_get($config, ['connection'], 'default'));
-        //        $this->poolName = data_get($config, 'connection', 'default');
-        //        $this->redis = $container->get(RedisFactory::class)->get(data_get($config, 'connection', 'default'));
-
-        //        $this->redis = $container->get(\Redis::class);
     }
 
     public function __call($name, $arguments)
@@ -159,7 +156,8 @@ class RedisDriver extends Driver implements KeyCollectorInterface
 
     public function keys(string $collector): array
     {
-        return $this->redis->sMembers($this->getCacheKey($collector));
+        $keys = $this->redis->sMembers($this->getCacheKey($collector));
+        return is_array($keys) === false ? [] : $keys;
     }
 
     public function delKey(string $collector, string ...$key): bool

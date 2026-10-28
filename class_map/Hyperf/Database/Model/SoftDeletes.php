@@ -12,15 +12,18 @@ declare(strict_types=1);
 
 namespace Hyperf\Database\Model;
 
-use Hyperf\DbConnection\Db;
 use Psr\EventDispatcher\StoppableEventInterface;
 
 use function Hyperf\Tappable\tap;
 
+use Hyperf\DbConnection\Db;
+
 /**
- * @method static static|\Hyperf\Database\Model\Builder|\Hyperf\Database\Query\Builder withTrashed(bool $withTrashed = true)
- * @method static static|\Hyperf\Database\Model\Builder|\Hyperf\Database\Query\Builder onlyTrashed()
- * @method static static|\Hyperf\Database\Model\Builder|\Hyperf\Database\Query\Builder withoutTrashed()
+ * @method static \Hyperf\Database\Model\Builder<static> withTrashed(bool $withTrashed = true)
+ * @method static \Hyperf\Database\Model\Builder<static> onlyTrashed()
+ * @method static \Hyperf\Database\Model\Builder<static> withoutTrashed()
+ * @method static static restoreOrCreate(array<string, mixed> $attributes = [], array<string, mixed> $values = [])
+ * @method static static createOrRestore(array<string, mixed> $attributes = [], array<string, mixed> $values = [])
  */
 trait SoftDeletes
 {
@@ -44,6 +47,12 @@ trait SoftDeletes
      */
     public function forceDelete()
     {
+        if ($event = $this->fireModelEvent('forceDeleting')) {
+            if ($event instanceof StoppableEventInterface && $event->isPropagationStopped()) {
+                return false;
+            }
+        }
+
         $this->forceDeleting = true;
 
         return tap($this->delete(), function ($deleted) {
@@ -93,6 +102,7 @@ trait SoftDeletes
             }
         }
 
+        /* AOP add start */
         // 更新还原时间
         $time = $this->freshTimestamp();
         if ($this->getDeletedTimeColumn()) {
@@ -102,6 +112,7 @@ trait SoftDeletes
         if ($this->getDeletedAtColumn()) {
             $this->{$this->getDeletedAtColumn()} = static::EFFECTIVE;
         }
+        /* AOP add end */
 
         // Once we have saved the model, we will fire the "restored" event so this
         // developer will do anything they need to after a restore operation is
@@ -157,12 +168,14 @@ trait SoftDeletes
 
     /**
      * Get the fully qualified "deleted at" column.
+     *
      * @return string
      */
     public function getQualifiedDeletedAtColumn(?Builder $builder = null)
     {
         $column = $this->getDeletedAtColumn();
 
+        /* AOP add start */
         if ($builder !== null) {
             $from = $builder->getQuery()->from;
             if (stripos($from, ' as ') !== false) {
@@ -171,6 +184,7 @@ trait SoftDeletes
                 $column = end($segments) ? (end($segments) . '.' . $column) : $column;
             }
         }
+        /* AOP add end */
 
         return $this->qualifyColumn($column);
     }
@@ -198,6 +212,7 @@ trait SoftDeletes
 
         $time = $this->freshTimestamp();
 
+        /* AOP add start */
         $columns = [];
         if ($this->getDeletedAtColumn()) {
             $columns[$this->getDeletedAtColumn()] = Db::raw($this->getKeyName()); // 设置为无效
@@ -209,9 +224,11 @@ trait SoftDeletes
             $columns[$this->getDeletedTimeColumn()] = $this->getDateTime($time, static::DELETED_AT_DATE_FORMAT);
             $this->{$this->getDeletedTimeColumn()} = $this->getDateTime($time, static::DELETED_AT_DATE_FORMAT);
         }
+        /* AOP add end */
 
         if ($this->timestamps && ! is_null($this->getUpdatedAtColumn())) {
             $this->{$this->getUpdatedAtColumn()} = $time;
+
             $columns[$this->getUpdatedAtColumn()] = $this->fromDateTime($time);
         }
 

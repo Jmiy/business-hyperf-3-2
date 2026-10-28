@@ -113,7 +113,9 @@ abstract class AbstractDriver implements DriverInterface
 
     protected function syncConfig(array $config, ?array $prevConfig = null)
     {
+        /* AOP update start */
         $this->updateConfig($config);
+        /* AOP update end */
 
         if (class_exists(ProcessCollector::class) && ! ProcessCollector::isEmpty()) {
             $this->shareConfigToProcesses($config);

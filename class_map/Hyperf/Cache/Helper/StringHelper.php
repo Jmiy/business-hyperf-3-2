@@ -23,7 +23,9 @@ class StringHelper
      */
     public static function format(string $prefix, array $arguments, ?string $value = null): string
     {
+        /* AOP add start */
         $arguments = StringHelper::handleArguments($arguments);
+        /* AOP add end */
 
         if ($value !== null) {
             if ($matches = StringHelper::parse($value)) {

@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Hyperf\Database\Model;
 
+use function Hyperf\Tappable\tap;
+
 use Hyperf\DbConnection\Db;
 
 class SoftDeletingScope implements Scope
@@ -19,7 +21,7 @@ class SoftDeletingScope implements Scope
     /**
      * All the extensions to be added to the builder.
      */
-    protected array $extensions = ['Restore', 'WithTrashed', 'WithoutTrashed', 'OnlyTrashed'];
+    protected array $extensions = ['Restore', 'RestoreOrCreate', 'CreateOrRestore', 'WithTrashed', 'WithoutTrashed', 'OnlyTrashed'];
 
     /**
      * Apply the scope to a given Model query builder.
@@ -41,13 +43,15 @@ class SoftDeletingScope implements Scope
         $builder->onDelete(function (Builder $builder) {
             $column = $this->getDeletedAtColumn($builder);
 
+            /* AOP add start */
             $model = $builder->getModel();
             $data = [
                 $column => Db::raw($model->getKeyName()), // 设置为无效
             ];
             if ($model->getDeletedTimeColumn()) {
-                $data[$model->getDeletedTimeColumn()] = $model->getDateTime($model->freshTimestamp(), $model::DELETED_AT_DATE_FORMAT);
+                $data[$model->getDeletedTimeColumn()] = $model->getDateTime($model->freshTimestamp(), $model::DELETED_AT_DATE_FORMAT); // 更新为无效的时间
             }
+            /* AOP add end */
 
             return $builder->update($data);
         });
@@ -75,15 +79,44 @@ class SoftDeletingScope implements Scope
         $builder->macro('restore', function (Builder $builder) {
             $builder->withTrashed();
 
+            /* AOP add start */
             $model = $builder->getModel();
             $column = $model->getDeletedAtColumn();
-
             $data = [$column => $model::EFFECTIVE];
             if ($model->getDeletedTimeColumn()) {
                 $data[$model->getDeletedTimeColumn()] = $model->getDateTime($model->freshTimestamp(), $model::DELETED_AT_DATE_FORMAT);
             }
+            /* AOP add end */
 
             return $builder->update($data);
+        });
+    }
+
+    /**
+     * Add the restore-or-create extension to the builder.
+     */
+    protected function addRestoreOrCreate(Builder $builder)
+    {
+        $builder->macro('restoreOrCreate', function (Builder $builder, array $attributes = [], array $values = []) {
+            $builder->withTrashed();
+
+            return tap($builder->firstOrCreate($attributes, $values), function ($instance) {
+                $instance->restore();
+            });
+        });
+    }
+
+    /**
+     * Add the create-or-restore extension to the builder.
+     */
+    protected function addCreateOrRestore(Builder $builder)
+    {
+        $builder->macro('createOrRestore', function (Builder $builder, array $attributes = [], array $values = []) {
+            $builder->withTrashed();
+
+            return tap($builder->createOrFirst($attributes, $values), function ($instance) {
+                $instance->restore();
+            });
         });
     }
 

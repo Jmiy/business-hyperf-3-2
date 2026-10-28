@@ -12,13 +12,14 @@ declare(strict_types=1);
 
 namespace Hyperf\Coroutine;
 
-use Business\Hyperf\Exception\Handler\AppExceptionHandler;
 use Hyperf\Context\ApplicationContext;
+use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Coroutine\Exception\InvalidArgumentException;
 use Hyperf\Engine\Channel;
+use Hyperf\ExceptionHandler\Formatter\FormatterInterface;
 use Throwable;
 
-use function Hyperf\Support\make;
+use Business\Hyperf\Exception\Handler\AppExceptionHandler;
 
 /**
  * @method bool isFull()
@@ -76,10 +77,12 @@ class Concurrent
                 $callable();
             } catch (Throwable $exception) {
                 if (ApplicationContext::hasContainer()) {
+                    /* AOP add start */
                     try {
                         ApplicationContext::getContainer()->get(AppExceptionHandler::class)->log($exception);
                     } catch (Throwable $throwable) {
                     }
+                    /* AOP add end */
                 }
             } finally {
                 $this->channel->pop();

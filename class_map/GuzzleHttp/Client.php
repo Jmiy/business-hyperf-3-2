@@ -48,8 +48,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     private $config;
 
     /**
-     * update jmiy
-     * Clients accept an array of constructor parameters.
+     * AOP update jmiy Clients accept an array of constructor parameters.
      *
      * Here's an example of creating a client using a base_uri and an array of
      * default request options to apply to each request:
@@ -130,11 +129,13 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
 //                ? HandlerStack::create()
 //                : HandlerStack::create(Utils::chooseHandler($handlerOptions));
 
+            /* AOP handle start */
             // 对应的 Handler 可以按需选择 CoroutineHandler 或 PoolHandler
             $factory = new HandlerStackFactory();
             $config['handler'] = $factory->create(data_get($config,'pool_handler.option',[]), data_get($config,'handler_stack.middlewares',[]));
         } elseif ($inCoroutine && $config['handler'] instanceof HandlerStack) {
             $config['handler']->setHandler(new CoroutineHandler());
+            /* AOP handle end */
         } elseif (!\is_callable($config['handler'])) {
             throw new InvalidArgumentException('handler must be a callable');
         } elseif ($handlerOptions !== []) {
@@ -425,14 +426,13 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     }
 
     /**
-     * update jmiy
-     * Merges default options into the array.
+     * AOP update jmiy Merges default options into the array.
      *
      * @param array $options Options to modify by reference
      */
     private function prepareDefaults(array $options): array
     {
-        /* jmiy add start */
+        /* AOP jmiy add start */
         $contextHeaders = Context::get(Constant::JSON_RPC_HEADERS_KEY, []);
         $results = [
             $contextHeaders,
@@ -442,7 +442,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             data_get($options, [RequestOptions::HEADERS], [])
         ];
         $options[RequestOptions::HEADERS] = array_merge([], ...$results);
-        /* jmiy add end */
+        /* AOP jmiy add end */
 
         self::warnAboutRequestLevelHandler($options);
 

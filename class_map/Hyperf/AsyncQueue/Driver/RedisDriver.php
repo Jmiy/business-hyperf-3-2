@@ -20,8 +20,8 @@ use Hyperf\Redis\RedisFactory;
 use Hyperf\Redis\RedisProxy;
 use Psr\Container\ContainerInterface;
 
-use function Hyperf\Collection\data_get;
 use function Hyperf\Support\make;
+use function Hyperf\Collection\data_get;
 
 class RedisDriver extends Driver
 {
@@ -61,6 +61,7 @@ class RedisDriver extends Driver
         $message = make(JobMessage::class, [$job]);
         $data = $this->packer->pack($message);
 
+        /* AOP add start */
         $waitingType = data_get($this->config, ['waiting']);
         // 如果待执行队列是使用有序集合实现，并且当前压入队列的元素已经存在，就直接返回压入队列成功
         if (
@@ -78,6 +79,7 @@ class RedisDriver extends Driver
             if ($waitingType === 'zset') {
                 return (bool) $this->redis->zAdd($this->channel->getWaiting(), $microtime, $data);
             }
+            /* AOP add end */
             return (bool) $this->redis->lPush($this->channel->getWaiting(), $data);
         }
 
@@ -97,24 +99,24 @@ class RedisDriver extends Driver
         $this->move($this->channel->getDelayed(), $this->channel->getWaiting());
         $this->move($this->channel->getReserved(), $this->channel->getTimeout());
 
+        /* AOP add start */
         $waitingType = data_get($this->config, ['waiting']);
         if ($waitingType === 'zset') {
             $_res = $this->redis->bzPopMin($this->channel->getWaiting(), $this->timeout);
             if (empty($_res)) {
-                unset($_res);
                 return [false, null];
             }
 
             [$key, $job, $score] = $_res;
             $res = [true, $job];
-            unset($key, $job, $score, $_res);
         } else {
+            /* AOP handle end */
             $res = $this->redis->brPop($this->channel->getWaiting(), $this->timeout);
             if (! isset($res[1])) {
-                unset($res);
                 return [false, null];
             }
         }
+
         $data = $res[1];
 
         $this->redis->zadd($this->channel->getReserved(), time() + $this->handleTimeout, $data);
@@ -152,7 +154,7 @@ class RedisDriver extends Driver
         }
 
         $num = 0;
-
+        /* AOP add start */
         $waitingType = data_get($this->config, ['waiting']);
         if ($waitingType === 'zset') {
             $listLen = $this->redis->lLen($channel);
@@ -176,11 +178,11 @@ class RedisDriver extends Driver
 
             $this->redis->zAdd($this->channel->getWaiting(), ...$scoresAndMems);
         } else {
+            /* AOP add end */
             while ($this->redis->rpoplpush($channel, $this->channel->getWaiting())) {
                 ++$num;
             }
         }
-
         return $num;
     }
 
@@ -196,16 +198,10 @@ class RedisDriver extends Driver
 
     public function info(): array
     {
-        $waitingLen = 0;
-        $waitingType = data_get($this->config, ['waiting']);
-        if ($waitingType === 'zset') {
-            $waitingLen = $this->redis->zCard($this->channel->getWaiting());
-        } else {
-            $waitingLen = $this->redis->lLen($this->channel->getWaiting());
-        }
         return [
-            //            'waiting' => $this->redis->lLen($this->channel->getWaiting()),
-            'waiting' => $waitingLen,
+            /* AOP add start */
+            'waiting' => data_get($this->config, ['waiting']) === 'zset' ? $this->redis->zCard($this->channel->getWaiting()) : $this->redis->lLen($this->channel->getWaiting()),
+            /* AOP add end */
             'delayed' => $this->redis->zCard($this->channel->getDelayed()),
             'failed' => $this->redis->lLen($this->channel->getFailed()),
             'timeout' => $this->redis->lLen($this->channel->getTimeout()),
@@ -252,10 +248,12 @@ class RedisDriver extends Driver
         if ($expired = $this->redis->zrevrangebyscore($from, (string) $now, '-inf', $options)) {
             foreach ($expired as $job) {
                 if ($this->redis->zRem($from, $job)) {
+                    /* AOP add start */
                     if (! empty($to)) {
                         if ($to == $this->channel->getWaiting() && data_get($this->config, ['waiting']) === 'zset') {
                             $this->redis->zAdd($to, microtime(true), $job);
                         } else {
+                            /* AOP add end */
                             $this->redis->lPush($to, $job);
                         }
                     }
