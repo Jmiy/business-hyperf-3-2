@@ -12,20 +12,22 @@ declare(strict_types=1);
 
 namespace Hyperf\JsonRpc;
 
-use Business\Hyperf\Constants\Constant;
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
-use Hyperf\Collection\Arr;
-use Hyperf\Context\Context;
 use Hyperf\Guzzle\ClientFactory;
 use Hyperf\LoadBalancer\LoadBalancerInterface;
 use Hyperf\LoadBalancer\Node;
 use Hyperf\Rpc\Contract\TransporterInterface;
 use RuntimeException;
 
-use function Business\Hyperf\Utils\Collection\data_get;
-use function Hyperf\Config\config;
 use function Hyperf\Support\value;
+
+use Business\Hyperf\Constants\Constant;
+use Hyperf\Collection\Arr;
+use Hyperf\Context\Context;
+
+use function Hyperf\Collection\data_get;
+use function Hyperf\Config\config;
 
 class JsonRpcHttpTransporter implements TransporterInterface
 {
@@ -80,7 +82,6 @@ class JsonRpcHttpTransporter implements TransporterInterface
             $contextHeaders,
             [
                 'Content-Type' => 'application/json',
-                //                Constant::RPC_APP_KEY => config('app_name'),
             ],
         ]);
 
@@ -110,7 +111,6 @@ class JsonRpcHttpTransporter implements TransporterInterface
         if ($response->getStatusCode() === 200) {
             return (string) $response->getBody();
         }
-        //        $this->loadBalancer->removeNode($node);//3.0 bug
 
         return '';
     }

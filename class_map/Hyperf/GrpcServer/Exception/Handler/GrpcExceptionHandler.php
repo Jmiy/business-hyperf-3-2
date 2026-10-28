@@ -45,9 +45,12 @@ class GrpcExceptionHandler extends ExceptionHandler
             $this->logger->debug($this->formatter->format($throwable));
             $code = $throwable->getCode();
         } else {
+            // $this->logger->warning($this->formatter->format($throwable));
+            // $code = StatusCode::INTERNAL;
+            /* AOP add start */
             $this->logger->error($this->formatter->format($throwable));
-            //            $code = StatusCode::INTERNAL;
             $code = $throwable->getCode();
+            /* AOP add end */
         }
 
         return $this->transferToResponse($code, $throwable->getMessage(), $response);

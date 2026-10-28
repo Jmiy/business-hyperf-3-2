@@ -19,6 +19,6 @@ class Signal implements SignalInterface
 {
     public static function wait(int $signo, float $timeout = -1): bool
     {
-        return System::waitSignal($signo, $timeout) ? true : false;
+        return System::waitSignal($signo, $timeout) !== false;
     }
 }

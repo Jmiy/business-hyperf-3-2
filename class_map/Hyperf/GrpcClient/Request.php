@@ -12,13 +12,14 @@ declare(strict_types=1);
 
 namespace Hyperf\GrpcClient;
 
-use Business\Hyperf\Constants\Constant;
 use Google\Protobuf\Internal\Message;
 use Hyperf\CodeParser\Package;
-use Hyperf\Collection\Arr;
-use Hyperf\Context\Context;
 use Hyperf\Grpc\Parser;
 use Swoole\Http2\Request as BaseRequest;
+
+use Business\Hyperf\Constants\Constant;
+use Hyperf\Collection\Arr;
+use Hyperf\Context\Context;
 
 class Request extends BaseRequest
 {
@@ -39,18 +40,23 @@ class Request extends BaseRequest
 
     public function getDefaultHeaders(): array
     {
+        $defaultHeaders = [
+            'content-type' => self::DEFAULT_CONTENT_TYPE,
+            'te' => 'trailers',
+            'user-agent' => $this->buildDefaultUserAgent(),
+        ];
+
+        /* AOP add start */
         $contextHeaders = Context::get(Constant::JSON_RPC_HEADERS_KEY, []);
         $headers = Arr::collapse([
             $contextHeaders,
-            [
-                'content-type' => self::DEFAULT_CONTENT_TYPE,
-                'te' => 'trailers',
-                'user-agent' => $this->buildDefaultUserAgent(),
-            ],
+            $defaultHeaders,
         ]);
         if (! array_key_exists(Constant::RPC_PROTOCOL_KEY, $headers)) {
             $headers[Constant::RPC_PROTOCOL_KEY] = Constant::JSON_RPC_HTTP_PROTOCOL;
         }
+        /* AOP add end */
+
         return $headers;
     }
 

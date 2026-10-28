@@ -123,10 +123,14 @@ class CoreMiddleware extends HttpCoreMiddleware
     protected function createDispatcher(string $serverName): Dispatcher
     {
         if ($this->protocol) {
-            /* AOP handle start */
+//            $factory = make(DispatcherFactory::class, [
+//                'pathGenerator' => $this->protocol->getPathGenerator(),
+//            ]);
+//            return $factory->getDispatcher($serverName);
+            /* AOP handle The key to supporting routing configuration start */
             $factory = $this->container->get(DispatcherFactory::class);
             return $factory->getDispatcher($serverName, $this->protocol->getPathGenerator());
-            /* AOP handle end */
+            /* AOP handle The key to supporting routing configuration end */
         }
 
         return parent::createDispatcher($serverName);
