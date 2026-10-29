@@ -66,24 +66,29 @@ class RegisterServiceListener implements ListenerInterface
         if (! $register) {
             return;
         }
+
         /* AOP handle start */
         $index = 'service_providers';
         $_services = $this->config->get('services', []);
         /* AOP handle end */
+
         $attempts = 10;
         while ($attempts > 0) {
             try {
                 $services = $this->serviceManager->all();
                 $servers = $this->getServers();
                 foreach ($services as $serviceName => $serviceProtocols) {
+
                     /* AOP handle start */
                     $isRegistry = data_get($_services, [$index, $serviceName, 'is_registry'], true); // $serviceName对应是服务是否需要注册 true:需要  false：不需要 默认：true
                     if ($isRegistry === false) {
                         continue;
                     }
                     /* AOP handle end */
+
                     foreach ($serviceProtocols as $paths) {
                         foreach ($paths as $service) {
+
                             /* AOP handle start */
                             if (! isset($service['publishTo'], $service['server'], $servers[$service['server']])) {
                                 continue;

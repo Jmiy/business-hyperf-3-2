@@ -111,10 +111,10 @@ class DispatcherFactory
     {
         foreach ($collector as $className => $metadata) {
             if (isset($metadata['_c'][RpcService::class])) {
-                $middlewares = $this->handleMiddleware($metadata['_c']);
                 /* AOP handle start */
                 $annotation = $metadata['_c'][RpcService::class];
                 if($annotation->server == $this->serverName){
+                    $middlewares = $this->handleMiddleware($metadata['_c']);
                     $this->handleRpcService($className, $annotation, $metadata['_m'] ?? [], $middlewares);
                 }
                 /* AOP handle end */
