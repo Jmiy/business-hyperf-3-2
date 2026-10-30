@@ -128,9 +128,9 @@ class ConfigProvider
 
                         // RedisPool::class => __DIR__ . '/../class_map/Hyperf/Redis/Pool/RedisPool.php',
 
-                        ObjectVersionListInfo::class => __DIR__ . '/../class_map/OSS/Model/ObjectVersionListInfo.php',
-                        SignerV1::class => __DIR__ . '/../class_map/OSS/Signer/SignerV1.php',
-                        SignerV4::class => __DIR__ . '/../class_map/OSS/Signer/SignerV4.php',
+                        // ObjectVersionListInfo::class => __DIR__ . '/../class_map/OSS/Model/ObjectVersionListInfo.php',
+                        // SignerV1::class => __DIR__ . '/../class_map/OSS/Signer/SignerV1.php',
+                        // SignerV4::class => __DIR__ . '/../class_map/OSS/Signer/SignerV4.php',
 
                         // Signal::class => __DIR__ . '/../class_map/Hyperf/Engine/Signal.php',
 

@@ -92,7 +92,8 @@ class SignerV4 implements SignerInterface
             parse_str($queryString, $query);
         }
         if (! empty($credentials->getSecurityToken())) {
-            $request->add_header('x-oss-security-token', $credentials->getSecurityToken());
+            $query["x-oss-security-token"] = $credentials->getSecurityToken();
+            //$request->add_header('x-oss-security-token', $credentials->getSecurityToken());// AOP
         }
         $query['x-oss-signature-version'] = 'OSS4-HMAC-SHA256';
         $query['x-oss-date'] = $datetime;
@@ -243,10 +244,10 @@ class SignerV4 implements SignerInterface
 
     private function calcSignature($secret, $date, $region, $product, $stringToSign)
     {
-        $h1Key = hash_hmac('sha256', $date, 'aliyun_v4' . $secret, true);
-        $h2Key = hash_hmac('sha256', $region, $h1Key, true);
-        $h3Key = hash_hmac('sha256', $product, $h2Key, true);
-        $h4Key = hash_hmac('sha256', 'aliyun_v4_request', $h3Key, true);
-        return bin2hex(hash_hmac('sha256', $stringToSign, $h4Key, true));
+        $h1Key = hash_hmac("sha256", $date, "aliyun_v4" . $secret, true);
+        $h2Key = hash_hmac("sha256", $region, $h1Key, true);
+        $h3Key = hash_hmac("sha256", $product, $h2Key, true);
+        $h4Key = hash_hmac("sha256", "aliyun_v4_request", $h3Key, true);
+        return bin2hex(hash_hmac("sha256", $stringToSign, $h4Key, true));
     }
 }

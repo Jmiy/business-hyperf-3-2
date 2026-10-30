@@ -1,48 +1,38 @@
 <?php
 
-declare(strict_types=1);
-/**
- * This file is part of Hyperf.
- *
- * @link     https://www.hyperf.io
- * @document https://hyperf.wiki
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
- */
-
 namespace OSS\Signer;
 
 use OSS\Core\OssUtil;
-use OSS\Credentials\Credentials;
 use OSS\Http\RequestCore;
+use OSS\Credentials\Credentials;
 
 class SignerV1 implements SignerInterface
 {
-    private $signKeyList = [
-        'acl', 'uploads', 'location', 'cors',
-        'logging', 'website', 'referer', 'lifecycle',
-        'delete', 'append', 'tagging', 'objectMeta',
-        'uploadId', 'partNumber', 'security-token', 'x-oss-security-token',
-        'position', 'img', 'style', 'styleName',
-        'replication', 'replicationProgress',
-        'replicationLocation', 'cname', 'bucketInfo',
-        'comp', 'qos', 'live', 'status', 'vod',
-        'startTime', 'endTime', 'symlink',
-        'x-oss-process', 'response-content-type', 'x-oss-traffic-limit',
-        'response-content-language', 'response-expires',
-        'response-cache-control', 'response-content-disposition',
-        'response-content-encoding', 'udf', 'udfName', 'udfImage',
-        'udfId', 'udfImageDesc', 'udfApplication',
-        'udfApplicationLog', 'restore', 'callback', 'callback-var', 'qosInfo',
-        'policy', 'stat', 'encryption', 'versions', 'versioning', 'versionId', 'requestPayment',
-        'x-oss-request-payer', 'sequential',
-        'inventory', 'inventoryId', 'continuation-token', 'asyncFetch',
-        'worm', 'wormId', 'wormExtend', 'withHashContext',
-        'x-oss-enable-md5', 'x-oss-enable-sha1', 'x-oss-enable-sha256',
-        'x-oss-hash-ctx', 'x-oss-md5-ctx', 'transferAcceleration',
-        'regionList', 'cloudboxes', 'x-oss-ac-source-ip', 'x-oss-ac-subnet-mask', 'x-oss-ac-vpc-id', 'x-oss-ac-forward-allow',
-        'metaQuery', 'resourceGroup', 'rtc', 'x-oss-async-process', 'responseHeader',
-    ];
+    private $signKeyList = array(
+        "acl", "uploads", "location", "cors",
+        "logging", "website", "referer", "lifecycle",
+        "delete", "append", "tagging", "objectMeta",
+        "uploadId", "partNumber", "security-token", "x-oss-security-token",
+        "position", "img", "style", "styleName",
+        "replication", "replicationProgress",
+        "replicationLocation", "cname", "bucketInfo",
+        "comp", "qos", "live", "status", "vod",
+        "startTime", "endTime", "symlink",
+        "x-oss-process", "response-content-type", "x-oss-traffic-limit",
+        "response-content-language", "response-expires",
+        "response-cache-control", "response-content-disposition",
+        "response-content-encoding", "udf", "udfName", "udfImage",
+        "udfId", "udfImageDesc", "udfApplication",
+        "udfApplicationLog", "restore", "callback", "callback-var", "qosInfo",
+        "policy", "stat", "encryption", "versions", "versioning", "versionId", "requestPayment",
+        "x-oss-request-payer", "sequential",
+        "inventory", "inventoryId", "continuation-token", "asyncFetch",
+        "worm", "wormId", "wormExtend", "withHashContext",
+        "x-oss-enable-md5", "x-oss-enable-sha1", "x-oss-enable-sha256",
+        "x-oss-hash-ctx", "x-oss-md5-ctx", "transferAcceleration",
+        "regionList", "cloudboxes", "x-oss-ac-source-ip", "x-oss-ac-subnet-mask", "x-oss-ac-vpc-id", "x-oss-ac-forward-allow",
+        "metaQuery", "resourceGroup", "rtc", "x-oss-async-process", "responseHeader"
+    );
 
     public function sign(RequestCore $request, Credentials $credentials, array &$options)
     {
@@ -86,7 +76,8 @@ class SignerV1 implements SignerInterface
         }
         // Credentials information
         if (! empty($credentials->getSecurityToken())) {
-            $request->add_header('x-oss-security-token', $credentials->getSecurityToken());
+            $query["security-token"] = $credentials->getSecurityToken();
+            // $request->add_header('x-oss-security-token', $credentials->getSecurityToken());// AOP
         }
         $method = strtoupper($request->method);
         $date = $expiration . '';
