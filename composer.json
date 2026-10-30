@@ -4,7 +4,7 @@
     "license": "MIT",
     "minimum-stability": "dev",
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.2",
         "hyperf/async-queue": "^3.2",
         "hyperf/constants": "^3.2",
         "hyperf/signal": "^3.2",
