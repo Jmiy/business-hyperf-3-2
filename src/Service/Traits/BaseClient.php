@@ -69,6 +69,17 @@ trait BaseClient
 
         $client = HttpClient::getClient($config, $poolHandlerOption, $handlerStackMiddlewares);
 
+        // Since guzzlehttp/guzzle 7.11: Passing int to request option "headers.X" is deprecated; guzzlehttp/guzzle 8.0 requires string|non-empty-array<array-key, string>
+        foreach ($headers as $name => $value) {
+            if (! is_array($value) && ! is_string($value)) {
+                $headers[$name] = (string) $value;
+            }
+
+            if (is_array($value) && empty($value)) {
+                unset($headers[$name]);
+            }
+        }
+
         /* Request Options https://docs.guzzlephp.org/en/stable/request-options.html */
         $options = Arr::collapse(
             [
