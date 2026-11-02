@@ -218,117 +218,115 @@ trait BaseDb
      */
     public static function updateOrCreate(array $where, array $data, ?array $handleData = [], null|array|string $connection = Constant::DB_CONNECTION_DEFAULT, null|array|string $table = null)
     {
-        $model = static::getModel($connection, $table);
-        $key = serialize(Arr::collapse([
-            [
-                $model->getConnectionName(),
-                $model->getTable(),
-            ], $where,
-        ]));
-        $key = md5($key);
-        unset($model);
-
-        //        $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
-        //        if (!empty($select)) {
-        //            $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
-        //            $model = $model->select($select);
-        //        }
-
-        $service = static::getNamespaceClass();
-
-        $parameters = [
-            function () use ($where, $data, $handleData, $connection, $table) {
-                //                $retry = 0;
-                //                beginning:
-
-                $model = static::getModel($connection, $table);
-
-                $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
-                if (! empty($select)) {
-                    $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
-                    $model = $model->select($select);
-                }
-                data_set($where, 'handleData', $handleData);
-
-                //                try {
-                return $model->updateOrCreate($where, $data); // ->select($select) updateOrCreate：不可以添加主键id的值  updateOrInsert：可以添加主键id的值
-                //                } catch (\Throwable $throwable) {
-                //
-                //                    if (false !== strpos($throwable->getMessage(), "wait_timeout")) {//如果不是主键冲突，就重试
-                //                        if ($retry < 3) {
-                //                            $retry = $retry + 1;
-                //                            Coroutine::sleep(rand(2, 5));
-                //                            goto beginning;
-                //                        }
-                //                    }
-                //
-                //                    throw $throwable;
-                //                }
-            },
-        ];
-        $rs = $lock = static::handleLock([$key], $parameters);
-
-        if ($rs === false) {// 如果获取分布式锁失败，就直接查询数据
-            $serialHandle = data_get($handleData, Constant::SERIAL_HANDLE, []);
-
-            $forceRelease = data_get($serialHandle, 'forceRelease', true); // 是否强制释放锁 true：是  false：否
-            $releaseTime = data_get($serialHandle, 'releaseTime', 1);
-
-            if ($forceRelease) {
-                Coroutine::sleep($releaseTime);
-                // 释放锁
-                $serialHandle = Arr::collapse(
-                    [
-                        $serialHandle,
-                        [
-                            getJobData($service, 'forceReleaseLock', [$key, 'forceRelease', 0]), // 获取分布式锁失败时，强制释放锁
-                        ],
-                    ]
-                );
-            }
-            //            else {
-            //                $rs = $model->buildWhere($where)->first();
-            //            }
-
-            foreach ($serialHandle as $handle) {
-                $service = data_get($handle, Constant::SERVICE, '');
-                $method = data_get($handle, Constant::METHOD, '');
-                $parameters = data_get($handle, Constant::PARAMETERS, []);
-
-                if (empty($service) || empty($method) || ! method_exists($service, $method)) {
-                    continue;
-                }
-
-                $service::{$method}(...$parameters);
-            }
-
-            return static::updateOrCreate(...func_get_args());
-        }
-
-        //        $retry = 0;
-        //        beginning:
-        //
         //        $model = static::getModel($connection, $table);
+        //        $key = serialize(Arr::collapse([
+        //            [
+        //                $model->getConnectionName(),
+        //                $model->getTable(),
+        //            ], $where,
+        //        ]));
+        //        $key = md5($key);
+        //        unset($model);
         //
-        //        $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
-        //        if (!empty($select)) {
-        //            $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
-        //            $model = $model->select($select);
-        //        }
-        //        data_set($where, 'handleData', $handleData);
+        //        //        $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
+        //        //        if (!empty($select)) {
+        //        //            $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
+        //        //            $model = $model->select($select);
+        //        //        }
         //
-        //        try {
-        //            $rs = $lock = $model->updateOrCreate($where, $data); // ->select($select) updateOrCreate：不可以添加主键id的值  updateOrInsert：可以添加主键id的值
-        //        } catch (\Throwable $throwable) {
+        //        $service = static::getNamespaceClass();
         //
-        //            if ($retry < 10) {
-        //                $retry = $retry + 1;
-        //                Coroutine::sleep(rand(2, 5));
-        //                goto beginning;
+        //        $parameters = [
+        //            function () use ($where, $data, $handleData, $connection, $table) {
+        //                //                $retry = 0;
+        //                //                beginning:
+        //
+        //                $model = static::getModel($connection, $table);
+        //
+        //                $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
+        //                if (! empty($select)) {
+        //                    $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
+        //                    $model = $model->select($select);
+        //                }
+        //                data_set($where, 'handleData', $handleData);
+        //
+        //                //                try {
+        //                return $model->updateOrCreate($where, $data); // ->select($select) updateOrCreate：不可以添加主键id的值  updateOrInsert：可以添加主键id的值
+        //                //                } catch (\Throwable $throwable) {
+        //                //
+        //                //                    if (false !== strpos($throwable->getMessage(), "wait_timeout")) {//如果不是主键冲突，就重试
+        //                //                        if ($retry < 3) {
+        //                //                            $retry = $retry + 1;
+        //                //                            Coroutine::sleep(rand(2, 5));
+        //                //                            goto beginning;
+        //                //                        }
+        //                //                    }
+        //                //
+        //                //                    throw $throwable;
+        //                //                }
+        //            },
+        //        ];
+        //        $rs = $lock = static::handleLock([$key], $parameters);
+        //
+        //        if ($rs === false) {// 如果获取分布式锁失败，就直接查询数据
+        //            $serialHandle = data_get($handleData, Constant::SERIAL_HANDLE, []);
+        //
+        //            $forceRelease = data_get($serialHandle, 'forceRelease', true); // 是否强制释放锁 true：是  false：否
+        //            $releaseTime = data_get($serialHandle, 'releaseTime', 1);
+        //
+        //            if ($forceRelease) {
+        //                Coroutine::sleep($releaseTime);
+        //                // 释放锁
+        //                $serialHandle = Arr::collapse(
+        //                    [
+        //                        $serialHandle,
+        //                        [
+        //                            getJobData($service, 'forceReleaseLock', [$key, 'forceRelease', 0]), // 获取分布式锁失败时，强制释放锁
+        //                        ],
+        //                    ]
+        //                );
+        //            }
+        //            //            else {
+        //            //                $rs = $model->buildWhere($where)->first();
+        //            //            }
+        //
+        //            foreach ($serialHandle as $handle) {
+        //                $service = data_get($handle, Constant::SERVICE, '');
+        //                $method = data_get($handle, Constant::METHOD, '');
+        //                $parameters = data_get($handle, Constant::PARAMETERS, []);
+        //
+        //                if (empty($service) || empty($method) || ! method_exists($service, $method)) {
+        //                    continue;
+        //                }
+        //
+        //                $service::{$method}(...$parameters);
         //            }
         //
-        //            throw $throwable;
+        //            return static::updateOrCreate(...func_get_args());
         //        }
+
+        $model = static::getModel($connection, $table);
+
+        $select = data_get($handleData, Constant::DB_OPERATION_SELECT, []);
+        if (! empty($select)) {
+            $select = array_unique(Arr::collapse([[$model->getKeyName()], $select]));
+            $model = $model->select($select);
+        }
+        data_set($where, 'handleData', $handleData);
+
+        $retry = 0;
+        beginning:
+        try {
+            $rs = $lock = $model->updateOrCreate($where, $data); // ->select($select) updateOrCreate：不可以添加主键id的值  updateOrInsert：可以添加主键id的值
+        } catch (Throwable $throwable) {
+            if ($retry < 10) {
+                $retry = $retry + 1;
+                Coroutine::sleep(rand(2, 5));
+                goto beginning;
+            }
+
+            throw $throwable;
+        }
 
         return [
             'lock' => $lock,
