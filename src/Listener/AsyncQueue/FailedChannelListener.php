@@ -24,10 +24,10 @@ class FailedChannelListener implements ListenerInterface
      * @var string[]
      */
     protected $channels = [
-        'failed',
+        'failed', 'timeout',
     ];
 
-    protected int $lengthCheckCount = 1000;
+    protected int $lengthCheckCount = 100;
 
     public function __construct(protected StdoutLoggerInterface $logger)
     {
@@ -57,7 +57,7 @@ class FailedChannelListener implements ListenerInterface
             return;
         }
 
-        $event->driver->flush();
+        $event->driver->flush($event->key);
         $this->logger->info(sprintf('%s channel flush %d messages success.', $event->key, $event->length));
 
         //        $event->driver->reload();
