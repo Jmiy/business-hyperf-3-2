@@ -670,7 +670,7 @@ trait BaseDb
      */
     public static function getLockKey(array|string $connection, array|string $table, array $lockKeys = [])
     {
-        $prefix = '{' . env('APP_NAME', 'skeleton') . '}';
+        $prefix = '{' . config('app_name') . ':' . config('app_env') . '}';
         return strtolower(
             implode(
                 ':',
@@ -686,6 +686,19 @@ trait BaseDb
                 )
             )
         );
+    }
+
+    /**
+     * 清除动态分表建表 Redis 标记（swap/drop 后避免脏缓存跳过 CREATE TABLE）.
+     */
+    public static function clearCreateTableMarker(string $connection, string $logicalTable): void
+    {
+        if ($connection === '' || $logicalTable === '') {
+            return;
+        }
+
+        $key = static::getLockKey($connection, $logicalTable, [Constant::CACHE_CREATE_TABLE_MARKER]);
+        static::getCacheDriver(Constant::CACHE_CONNECTION_POOL_TASK)->del($key);
     }
 
     /**

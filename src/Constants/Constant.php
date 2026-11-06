@@ -1142,7 +1142,7 @@ class Constant
 
     public const I_CACHE_CONNECTION_POOL_DEFAULT = 'i_cache'; // 默认缓存池
 
-    public const CACHE_CONNECTION_POOL_TASK = 'cache_connection_pool_task'; // Walmart消息队列
+    public const CACHE_CONNECTION_POOL_TASK = 'cache_connection_pool_task'; // 公共缓存连接池
 
     public const CACHE_CREATE_TABLE_MARKER = 'create_table_marker'; // 创建表的缓存标记
 
