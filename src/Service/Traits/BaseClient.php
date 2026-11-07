@@ -180,10 +180,10 @@ trait BaseClient
         try {
             $response = $client->request($method, $url, $options);
         } catch (RequestException $e) {
-            //            var_dump(\GuzzleHttp\Psr7\Message::toString($e->getRequest()));
+            // var_dump(\GuzzleHttp\Psr7\Message::toString($e->getRequest()));
             if ($e->hasResponse()) {
                 $response = $e->getResponse();
-            //                var_dump(\GuzzleHttp\Psr7\Message::toString($response));
+            // var_dump(\GuzzleHttp\Psr7\Message::toString($response));
             } else {
                 data_set($responseData, Constant::RESPONSE_STATUS_CODE, $e->getCode());
                 data_set($responseData, Constant::RESPONSE_REASON_PHRASE, $e->getMessage());
