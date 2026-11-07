@@ -56,8 +56,6 @@ trait Queue
 
         $job = getJobData($callback, $method, $parameters, $request, $extData);
 
-        //        return pushQueue($job);
-
         $isPush = true;
         $retryMax = data_get($extData, Constant::RETRY_MAX, 3);
         $sleepMin = data_get($extData, Constant::SLEEP_MIN, 0);

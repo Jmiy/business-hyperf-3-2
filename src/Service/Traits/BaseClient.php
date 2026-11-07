@@ -21,6 +21,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\RequestOptions;
 use Hyperf\Codec\Json;
 use Hyperf\Collection\Arr;
+use Hyperf\Context\ApplicationContext;
 use Throwable;
 
 use function Business\Hyperf\Utils\Collection\data_get;
@@ -189,7 +190,8 @@ trait BaseClient
             }
         } catch (Throwable $throwable) {
             go(function () use ($throwable, $responseData) {
-                make(AppExceptionHandler::class)->log($throwable, 'warning', $responseData);
+                ApplicationContext::getContainer()->get(AppExceptionHandler::class)->log($throwable, 'warning', $responseData);
+                // make(AppExceptionHandler::class)->log($throwable, 'warning', $responseData);
             });
 
             throw $throwable;

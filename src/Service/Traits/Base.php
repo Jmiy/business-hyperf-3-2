@@ -16,7 +16,7 @@ use Business\Hyperf\Kernel\Codec\Json;
 use Hyperf\Collection\Arr;
 use Hyperf\HttpServer\Contract\RequestInterface;
 
-use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_get;
 use function Hyperf\Support\call;
 
 trait Base
