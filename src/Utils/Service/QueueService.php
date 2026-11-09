@@ -21,7 +21,7 @@ use Hyperf\AsyncQueue\Driver\DriverInterface;
 use Hyperf\Context\ApplicationContext;
 use Throwable;
 
-use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_get;
 use function Hyperf\Config\config;
 use function Hyperf\Coroutine\go;
 
