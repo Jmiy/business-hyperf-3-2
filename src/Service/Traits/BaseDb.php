@@ -28,7 +28,6 @@ use function Hyperf\Collection\data_set;
 use function Hyperf\Config\config;
 use function Hyperf\Coroutine\go;
 use function Hyperf\Support\call;
-use function Hyperf\Support\env;
 
 trait BaseDb
 {
@@ -698,7 +697,8 @@ trait BaseDb
         }
 
         $key = static::getLockKey($connection, $logicalTable, [Constant::CACHE_CREATE_TABLE_MARKER]);
-        static::getCacheDriver(Constant::CACHE_CONNECTION_POOL_TASK)->del($key);
+
+        static::getCacheDriver(Constant::CACHE_CONNECTION_POOL_TASK)->delete($key);
     }
 
     /**

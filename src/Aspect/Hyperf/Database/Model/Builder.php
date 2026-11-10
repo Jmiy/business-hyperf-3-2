@@ -13,19 +13,24 @@ declare(strict_types=1);
 namespace Business\Hyperf\Aspect\Hyperf\Database\Model;
 
 use Business\Hyperf\Constants\Constant;
+use Business\Hyperf\Database\Events\QueryExceptionEvent;
+use Hyperf\Context\ApplicationContext;
 use Hyperf\Database\Model\Builder as ModelBuilder;
 use Hyperf\Database\Model\Model;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Throwable;
 
-use function Business\Hyperf\Utils\Collection\data_get;
+use function Hyperf\Collection\data_get;
 use function Hyperf\Collection\data_set;
 use function Hyperf\Coroutine\go;
 use function Hyperf\Support\call;
 use function Hyperf\Tappable\tap;
 
-#[Aspect(classes: [ModelBuilder::class . '::__call', ModelBuilder::class . '::firstOrCreate', ModelBuilder::class . '::updateOrCreate', ModelBuilder::class . '::update', ModelBuilder::class . '::firstOrNew'], annotations: [])]
+// #[Aspect(classes: [ModelBuilder::class . '::__call', ModelBuilder::class . '::firstOrCreate', ModelBuilder::class . '::updateOrCreate', ModelBuilder::class . '::update', ModelBuilder::class . '::firstOrNew'], annotations: [])]
+#[Aspect(classes: [ModelBuilder::class], annotations: [])]
 class Builder extends AbstractAspect
 {
     public static $dbOperation = [
@@ -268,6 +273,24 @@ class Builder extends AbstractAspect
 
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
-        return call([$this, 'aop_' . $proceedingJoinPoint->methodName], [$proceedingJoinPoint]);
+        try {
+            $method = 'aop_' . $proceedingJoinPoint->methodName;
+            if (method_exists($this, $method)) {
+                return call([$this, $method], [$proceedingJoinPoint]);
+            }
+            return $proceedingJoinPoint->process();
+        } catch (Throwable $throwable) {
+            try {
+                if (ApplicationContext::hasContainer()) {
+                    $eventDispatcher = ApplicationContext::getContainer()->get(EventDispatcherInterface::class);
+                    $eventDispatcher->dispatch(new QueryExceptionEvent($proceedingJoinPoint->getInstance(), $throwable));
+                }
+            } catch (Throwable $_throwable) {
+                go(function () use ($_throwable) {
+                    throw $_throwable;
+                });
+            }
+            throw $throwable;
+        }
     }
 }
