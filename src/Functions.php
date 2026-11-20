@@ -1523,12 +1523,15 @@ if (! function_exists('loger')) {
 }
 
 if (! function_exists('arrayTrim')) {
-    function arrayTrim(array|string $input): array|string
+    function arrayTrim(mixed $input): mixed
     {
-        if (! is_array($input)) {
+        if (is_array($input)) {
+            return array_map('arrayTrim', $input);
+        }
+        if (is_string($input)) {
             return trim($input);
         }
-        return array_map('arrayTrim', $input);
+        return $input;
     }
 }
 
