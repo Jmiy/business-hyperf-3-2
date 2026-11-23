@@ -59,7 +59,7 @@ class DbQueryExecutedListener implements ListenerInterface
      */
     public function process(object $event): void
     {
-        if (config('app_env', 'dev') == 'prod') {
+        if (in_array(config('app_env', 'dev'), ['release', 'prod'])) {
             return;
         }
 
